@@ -1,0 +1,5 @@
+CarServer.NearbyChargingSites.timestamp type:FT_IGNORE
+CarServer.Ping.local_timestamp type:FT_IGNORE
+CarServer.Ping.last_remote_timestamp type:FT_IGNORE
+
+CarServer.ResultReason.plain_text max_size:200

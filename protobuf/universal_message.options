@@ -1,0 +1,12 @@
+## Destination
+UniversalMessage.Destination.routing_address max_size:16
+
+## SessionInfoRequest
+UniversalMessage.SessionInfoRequest.public_key max_size:65
+UniversalMessage.SessionInfoRequest.challenge max_size:32
+
+## RoutableMessage
+UniversalMessage.RoutableMessage.protobuf_message_as_bytes max_size:100
+UniversalMessage.RoutableMessage.session_info max_size:100
+UniversalMessage.RoutableMessage.request_uuid max_size:16
+UniversalMessage.RoutableMessage.uuid max_size:16

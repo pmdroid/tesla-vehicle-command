@@ -1,0 +1,18 @@
+## KeyIdentity
+Signatures.KeyIdentity.public_key max_size:65
+
+## AES_GCM_Personalized_Signature_Data
+Signatures.AES_GCM_Personalized_Signature_Data.epoch max_size:16
+Signatures.AES_GCM_Personalized_Signature_Data.nonce max_size:12
+Signatures.AES_GCM_Personalized_Signature_Data.tag max_size:16
+
+## HMAC_Personalized_Signature_Data
+Signatures.HMAC_Personalized_Signature_Data.epoch max_size:16
+Signatures.HMAC_Personalized_Signature_Data.tag max_size:16
+
+## HMAC_Signature_Data
+Signatures.HMAC_Signature_Data.tag max_size:34
+
+## SessionInfo
+Signatures.SessionInfo.publicKey max_size:65
+Signatures.SessionInfo.epoch max_size:16 fixed_length:true

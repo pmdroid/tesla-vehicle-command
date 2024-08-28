@@ -1,0 +1,217 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 077b3ed..2f4caa8 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -22,7 +22,7 @@ FetchContent_Declare(
+ FetchContent_Declare(
+         mbedtls
+         GIT_REPOSITORY https://github.com/Mbed-TLS/mbedtls.git
+-        GIT_TAG v3.6.0
++        GIT_TAG v2.28.8
+         GIT_SHALLOW TRUE
+ )
+
+diff --git a/src/authenticator.cpp b/src/authenticator.cpp
+index 3a5cde0..597e560 100644
+--- a/src/authenticator.cpp
++++ b/src/authenticator.cpp
+@@ -153,7 +153,7 @@ namespace TeslaBLE {
+         unsigned char password[0];
+         return_code = mbedtls_pk_parse_key(
+             &this->private_key_context_, private_key_buffer, private_key_size,
+-            password, 0, mbedtls_ctr_drbg_random, &this->drbg_context_);
++            password, 0);
+
+         if (return_code != 0) {
+             Common::PrintErrorFromMbedTlsErrorCode(return_code);
+@@ -185,8 +185,8 @@ namespace TeslaBLE {
+
+     int Authenticator::GeneratePublicKey() {
+         int return_code = mbedtls_ecp_point_write_binary(
+-            &mbedtls_pk_ec(this->private_key_context_)->private_grp,
+-            &mbedtls_pk_ec(this->private_key_context_)->private_Q,
++            &mbedtls_pk_ec(this->private_key_context_)->grp,
++            &mbedtls_pk_ec(this->private_key_context_)->Q,
+             MBEDTLS_ECP_PF_UNCOMPRESSED, &this->public_key_size_, this->public_key_,
+             sizeof(this->public_key_));
+
+@@ -210,7 +210,7 @@ namespace TeslaBLE {
+         unsigned char temp_shared_secret[32];
+         size_t temp_shared_secret_length = 0;
+
+-        int return_code = mbedtls_ecp_group_load(&tesla_key.private_grp,
++        int return_code = mbedtls_ecp_group_load(&tesla_key.grp,
+                                                  MBEDTLS_ECP_DP_SECP256R1);
+         if (return_code != 0) {
+             Common::PrintErrorFromMbedTlsErrorCode(return_code);
+@@ -218,7 +218,7 @@ namespace TeslaBLE {
+         }
+
+         return_code = mbedtls_ecp_point_read_binary(
+-            &tesla_key.private_grp, &tesla_key.private_Q,
++            &tesla_key.grp, &tesla_key.Q,
+             public_key_buffer, public_key_size);
+
+         if (return_code != 0) {
+@@ -257,25 +257,10 @@ namespace TeslaBLE {
+         mbedtls_sha1_context sha1_context;
+         mbedtls_sha1_init(&sha1_context);
+
+-        return_code = mbedtls_sha1_starts(&sha1_context);
+-        if (return_code != 0) {
+-            Common::PrintErrorFromMbedTlsErrorCode(return_code);
+-            return ResultCode::MBEDTLS_ERROR;
+-        }
+-
+-        return_code = mbedtls_sha1_update(&sha1_context, temp_shared_secret,
+-                                          temp_shared_secret_length);
+-        if (return_code != 0) {
+-            Common::PrintErrorFromMbedTlsErrorCode(return_code);
+-            return ResultCode::MBEDTLS_ERROR;
+-        }
+-
+-        return_code = mbedtls_sha1_finish(&sha1_context, this->shared_secrets_[domain]);
+-        if (return_code != 0) {
+-            Common::PrintErrorFromMbedTlsErrorCode(return_code);
+-            return ResultCode::MBEDTLS_ERROR;
+-        }
+-
++        mbedtls_sha1_starts(&sha1_context);
++        mbedtls_sha1_update(&sha1_context, temp_shared_secret,
++                            temp_shared_secret_length);
++        mbedtls_sha1_finish(&sha1_context, this->shared_secrets_[domain]);
+         mbedtls_sha1_free(&sha1_context);
+         mbedtls_ecp_keypair_free(&tesla_key);
+         return ResultCode::SUCCESS;
+@@ -299,45 +284,19 @@ namespace TeslaBLE {
+         }
+
+         return_code = mbedtls_gcm_starts(&aes_context, MBEDTLS_GCM_ENCRYPT, this->nonce_,
+-                                         12);
++                                         12, checksum, 32);
+         if (return_code != 0) {
+             Common::PrintErrorFromMbedTlsErrorCode(return_code);
+             return ResultCode::MBEDTLS_ERROR;
+         }
+
+-        return_code = mbedtls_gcm_update_ad(&aes_context, checksum, 32);
+-        if (return_code != 0) {
+-            Common::PrintErrorFromMbedTlsErrorCode(return_code);
+-            return ResultCode::MBEDTLS_ERROR;
+-        }
+-
+-        return_code =
+-                mbedtls_gcm_update(&aes_context, input_buffer, input_buffer_size,
+-                                   output_buffer, output_buffer_size, output_size);
+-
+-        if (return_code != 0) {
+-            Common::PrintErrorFromMbedTlsErrorCode(return_code);
+-            return ResultCode::MBEDTLS_ERROR;
+-        }
+-
+-        size_t finish_buffer_length = 0;
+-        unsigned char finish_buffer[15];
+-
+-        return_code =
+-                mbedtls_gcm_finish(&aes_context, finish_buffer, sizeof(finish_buffer),
+-                                   &finish_buffer_length, tag_buffer, 16);
+-
+-        if (return_code != 0) {
+-            Common::PrintErrorFromMbedTlsErrorCode(return_code);
+-            return ResultCode::MBEDTLS_ERROR;
+-        }
++        mbedtls_gcm_update(&aes_context, input_buffer_size, input_buffer, output_buffer);
++        mbedtls_gcm_finish(&aes_context, tag_buffer, 16);
++        mbedtls_gcm_free(&aes_context);
+
+-        if (finish_buffer_length > 0) {
+-            memcpy(output_buffer + *output_size, finish_buffer, finish_buffer_length);
+-            *output_size = output_buffer_size + finish_buffer_length;
+-        }
++        // hack for old medbtls implementation
++        *output_size = input_buffer_size;
+
+-        mbedtls_gcm_free(&aes_context);
+         return ResultCode::SUCCESS;
+     }
+
+diff --git a/src/metadata.cpp b/src/metadata.cpp
+index 3eefddd..fc268d4 100644
+--- a/src/metadata.cpp
++++ b/src/metadata.cpp
+@@ -18,11 +18,7 @@ namespace TeslaBLE {
+     int MetaData::Start() {
+         this->last_tag = 0;
+         mbedtls_sha256_init(&this->sha256_context_);
+-        int return_code = mbedtls_sha256_starts(&this->sha256_context_, 0);
+-        if (return_code != 0) {
+-            Common::PrintErrorFromMbedTlsErrorCode(return_code);
+-            return ResultCode::MBEDTLS_ERROR;
+-        }
++        mbedtls_sha256_starts(&this->sha256_context_, 0);
+
+         return ResultCode::SUCCESS;
+     }
+@@ -76,23 +72,9 @@ namespace TeslaBLE {
+
+         this->last_tag = signatures_tag;
+
+-        int return_code = mbedtls_sha256_update(&this->sha256_context_, &signatures_tag, 1);
+-        if (return_code != 0) {
+-            Common::PrintErrorFromMbedTlsErrorCode(return_code);
+-            return ResultCode::MBEDTLS_ERROR;
+-        }
+-
+-        return_code = mbedtls_sha256_update(&this->sha256_context_, &value_size, 1);
+-        if (return_code != 0) {
+-            Common::PrintErrorFromMbedTlsErrorCode(return_code);
+-            return ResultCode::MBEDTLS_ERROR;
+-        }
+-
+-        return_code = mbedtls_sha256_update(&this->sha256_context_, value, value_size);
+-        if (return_code != 0) {
+-            Common::PrintErrorFromMbedTlsErrorCode(return_code);
+-            return ResultCode::MBEDTLS_ERROR;
+-        }
++        mbedtls_sha256_update(&this->sha256_context_, &signatures_tag, 1);
++        mbedtls_sha256_update(&this->sha256_context_, &value_size, 1);
++        mbedtls_sha256_update(&this->sha256_context_, value, value_size);
+
+         return ResultCode::SUCCESS;
+     }
+@@ -109,16 +91,8 @@ namespace TeslaBLE {
+     }
+
+     void MetaData::Checksum(unsigned char *output, const unsigned char end_tag) {
+-        int return_code = mbedtls_sha256_update(&this->sha256_context_, &end_tag, 1);
+-        if (return_code != 0) {
+-            Common::PrintErrorFromMbedTlsErrorCode(return_code);
+-        }
+-
+-        return_code = mbedtls_sha256_finish(&this->sha256_context_, output);
+-        if (return_code != 0) {
+-            Common::PrintErrorFromMbedTlsErrorCode(return_code);
+-        }
+-
++        mbedtls_sha256_update(&this->sha256_context_, &end_tag, 1);
++        mbedtls_sha256_finish(&this->sha256_context_, output);
+         mbedtls_sha256_free(&this->sha256_context_);
+     }
+ }
+diff --git a/src/shared.cpp b/src/shared.cpp
+index dadef5e..e1a212b 100644
+--- a/src/shared.cpp
++++ b/src/shared.cpp
+@@ -79,11 +79,7 @@ namespace TeslaBLE {
+         strcpy((char *) parsed_vin, (char *) vin);
+
+         unsigned char hashed_vin[20];
+-        const int return_code = mbedtls_sha1(parsed_vin, 17, hashed_vin);
+-        if (return_code != 0) {
+-            Common::PrintErrorFromMbedTlsErrorCode(return_code);
+-            return 1;
+-        }
++        mbedtls_sha1(parsed_vin, 17, hashed_vin);
+
+         output[0] = 'S';
+         for (int i = 0; i < 8; ++i) {

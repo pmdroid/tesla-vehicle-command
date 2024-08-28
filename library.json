@@ -1,0 +1,45 @@
+{
+  "name": "tesla-vehicle-command",
+  "version": "1.0.0",
+  "description": "This CPP library facilitates direct communication with Tesla vehicles via the BLE API. It offers fundamental features such as unlocking/locking, opening the trunk, and more. The library's capabilities are contingent on the range of actions implemented by Tesla, which is the only limitation at present.",
+  "keywords": "tesla, ble, vehicle control",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/pmdroid/tesla-vehicle-command.git"
+  },
+  "authors": [
+    {
+      "name": "Pascal Matthiesen",
+      "email": "me@pascal.sh",
+      "url": "https://pascal.sh",
+      "maintainer": true
+    }
+  ],
+  "license": "AGPL-3.0-or-later",
+  "homepage": "https://github.com/pmdroid/tesla-vehicle-command",
+  "frameworks": "*",
+  "platforms": [
+    "espidf"
+  ],
+  "dependencies": {
+    "nanopb/Nanopb": "^0.4.8"
+  },
+  "export": {
+    "exclude": [
+      "cmake-build-debug/",
+      "**/cmake-build-debug/",
+      "build/",
+      "**/build/",
+      ".pio/",
+      "**/.pio/",
+      ".idea/",
+      "**/.idea/",
+      ".vscode/",
+      "**/.vscode/",
+      ".stfolder/",
+      "**/.stfolder/",
+      "library.zip",
+      "**/library.zip"
+    ]
+  }
+}
