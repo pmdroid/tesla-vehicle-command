@@ -198,5 +198,8 @@ fabric.properties
 
 build/
 library.zip
+site/node_modules/
+site/dist/
+site/.astro/
 
 # End of https://www.toptal.com/developers/gitignore/api/intellij,c++,cmake,platformio,visualstudiocode

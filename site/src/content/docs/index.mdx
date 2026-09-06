@@ -1,0 +1,32 @@
+---
+title: TeslaBLE
+description: C++ library for Tesla vehicle-command over BLE
+template: splash
+hero:
+  tagline: Encode Tesla vehicle-command protobufs, run the BLE handshake, and talk to the car from C++ or Arduino.
+  actions:
+    - text: How to use it
+      link: /install/
+      icon: right-arrow
+    - text: GitHub
+      link: https://github.com/pmdroid/tesla-vehicle-command
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid>
+	<Card title="Pair once" icon="approve-check">
+		Load or create a P-256 key. Whitelist it with `Authenticator::BuildKeyWhitelistMessage`. Present an NFC card if the car returns `WAIT`.
+	</Card>
+	<Card title="Two domains" icon="information">
+		Request session info on VCSEC and Infotainment. `Session::UpdateSessionInfo` checks the HMAC, then `BuildRoutableMessage` encrypts the payload.
+	</Card>
+	<Card title="Helpers, not a facade" icon="puzzle">
+		`CarServer::*` and `Security::*` encode Tesla actions. You own BLE write, ATT reassembly (`BleFrame`), and decode.
+	</Card>
+	<Card title="Pinned to Tesla" icon="github">
+		Protos from teslamotors/vehicle-command `f97fa1e`. Host tests include Tesla protocol.md vectors and Go `proto.Marshal` goldens.
+	</Card>
+</CardGrid>

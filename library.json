@@ -38,6 +38,8 @@
       "**/.vscode/",
       ".stfolder/",
       "**/.stfolder/",
+      "site/",
+      "**/site/",
       "library.zip",
       "**/library.zip"
     ]
