@@ -1,6 +1,7 @@
 #include "carserver.h"
 
 #include <cstdio>
+#include <cstring>
 
 #include <car_server.pb.h>
 
@@ -503,5 +504,165 @@ namespace TeslaBLE {
         vehicle_action.vehicle_action_msg.getNearbyChargingSites.count = 10;
         return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
     }
+
+    int CarServer::EmptyVehicleAction(pb_size_t which, unsigned char *buffer, size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = which;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    static bool FourDigitPin(const char *pin) {
+        if (pin == nullptr) {
+            return false;
+        }
+        size_t n = 0;
+        while (pin[n] != '\0') {
+            if (pin[n] < '0' || pin[n] > '9') {
+                return false;
+            }
+            ++n;
+        }
+        return n == 4;
+    }
+
+    int CarServer::HonkHorn(unsigned char *buffer, size_t *buffer_size) {
+        return CarServer::EmptyVehicleAction(CarServer_VehicleAction_vehicleControlHonkHornAction_tag, buffer,
+                                             buffer_size);
+    }
+
+    int CarServer::FlashLights(unsigned char *buffer, size_t *buffer_size) {
+        return CarServer::EmptyVehicleAction(CarServer_VehicleAction_vehicleControlFlashLightsAction_tag, buffer,
+                                             buffer_size);
+    }
+
+    int CarServer::CloseWindows(unsigned char *buffer, size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_vehicleControlWindowAction_tag;
+        vehicle_action.vehicle_action_msg.vehicleControlWindowAction.which_action =
+            CarServer_VehicleControlWindowAction_close_tag;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::SetSunroofLevel(int32_t absolute_level, unsigned char *buffer, size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_vehicleControlSunroofOpenCloseAction_tag;
+        vehicle_action.vehicle_action_msg.vehicleControlSunroofOpenCloseAction.which_sunroof_level =
+            CarServer_VehicleControlSunroofOpenCloseAction_absolute_level_tag;
+        vehicle_action.vehicle_action_msg.vehicleControlSunroofOpenCloseAction.sunroof_level.absolute_level =
+            absolute_level;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::SetSentryMode(bool on, unsigned char *buffer, size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_vehicleControlSetSentryModeAction_tag;
+        vehicle_action.vehicle_action_msg.vehicleControlSetSentryModeAction.on = on;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::EnableValetMode(const char *pin, unsigned char *buffer, size_t *buffer_size) {
+        if (!FourDigitPin(pin)) {
+            return ResultCode::ERROR;
+        }
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_vehicleControlSetValetModeAction_tag;
+        vehicle_action.vehicle_action_msg.vehicleControlSetValetModeAction.on = true;
+        strncpy(vehicle_action.vehicle_action_msg.vehicleControlSetValetModeAction.password, pin,
+                sizeof(vehicle_action.vehicle_action_msg.vehicleControlSetValetModeAction.password) - 1);
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::DisableValetMode(unsigned char *buffer, size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_vehicleControlSetValetModeAction_tag;
+        vehicle_action.vehicle_action_msg.vehicleControlSetValetModeAction.on = false;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::ResetValetPin(unsigned char *buffer, size_t *buffer_size) {
+        return CarServer::EmptyVehicleAction(CarServer_VehicleAction_vehicleControlResetValetPinAction_tag, buffer,
+                                             buffer_size);
+    }
+
+    int CarServer::SetGuestMode(bool on, unsigned char *buffer, size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_guestModeAction_tag;
+        vehicle_action.vehicle_action_msg.guestModeAction.GuestModeActive = on;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::EraseGuestData(unsigned char *buffer, size_t *buffer_size) {
+        return CarServer::EmptyVehicleAction(CarServer_VehicleAction_eraseUserDataAction_tag, buffer, buffer_size);
+    }
+
+    int CarServer::Ping(unsigned char *buffer, size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_ping_tag;
+        vehicle_action.vehicle_action_msg.ping.ping_id = 1;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::ScheduleSoftwareUpdate(int32_t offset_sec, unsigned char *buffer, size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg =
+            CarServer_VehicleAction_vehicleControlScheduleSoftwareUpdateAction_tag;
+        vehicle_action.vehicle_action_msg.vehicleControlScheduleSoftwareUpdateAction.offset_sec = offset_sec;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::CancelSoftwareUpdate(unsigned char *buffer, size_t *buffer_size) {
+        return CarServer::EmptyVehicleAction(CarServer_VehicleAction_vehicleControlCancelSoftwareUpdateAction_tag,
+                                             buffer, buffer_size);
+    }
+
+    int CarServer::TriggerHomelink(float latitude, float longitude, unsigned char *buffer, size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_vehicleControlTriggerHomelinkAction_tag;
+        vehicle_action.vehicle_action_msg.vehicleControlTriggerHomelinkAction.has_location = true;
+        vehicle_action.vehicle_action_msg.vehicleControlTriggerHomelinkAction.location.latitude = latitude;
+        vehicle_action.vehicle_action_msg.vehicleControlTriggerHomelinkAction.location.longitude = longitude;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::SetVehicleName(const char *name, unsigned char *buffer, size_t *buffer_size) {
+        if (name == nullptr || name[0] == '\0') {
+            return ResultCode::ERROR;
+        }
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_setVehicleNameAction_tag;
+        strncpy(vehicle_action.vehicle_action_msg.setVehicleNameAction.vehicleName, name,
+                sizeof(vehicle_action.vehicle_action_msg.setVehicleNameAction.vehicleName) - 1);
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::PreviousMediaTrack(unsigned char *buffer, size_t *buffer_size) {
+        return CarServer::EmptyVehicleAction(CarServer_VehicleAction_mediaPreviousTrack_tag, buffer, buffer_size);
+    }
+
+    int CarServer::NextMediaFavorite(unsigned char *buffer, size_t *buffer_size) {
+        return CarServer::EmptyVehicleAction(CarServer_VehicleAction_mediaNextFavorite_tag, buffer, buffer_size);
+    }
+
+    int CarServer::PreviousMediaFavorite(unsigned char *buffer, size_t *buffer_size) {
+        return CarServer::EmptyVehicleAction(CarServer_VehicleAction_mediaPreviousFavorite_tag, buffer, buffer_size);
+    }
+
+    int CarServer::VolumeDelta(int32_t delta, unsigned char *buffer, size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_mediaUpdateVolume_tag;
+        vehicle_action.vehicle_action_msg.mediaUpdateVolume.which_media_volume =
+            CarServer_MediaUpdateVolume_volume_delta_tag;
+        vehicle_action.vehicle_action_msg.mediaUpdateVolume.media_volume.volume_delta = delta;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::VolumeUp(unsigned char *buffer, size_t *buffer_size) {
+        return CarServer::VolumeDelta(1, buffer, buffer_size);
+    }
+
+    int CarServer::VolumeDown(unsigned char *buffer, size_t *buffer_size) {
+        return CarServer::VolumeDelta(-1, buffer, buffer_size);
+    }
 } // TeslaBLE
+
 
