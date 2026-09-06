@@ -29,13 +29,13 @@ option(TESLA_BLE_BUILD_TESTS "Build host unit tests" ${TESLA_BLE_BUILD_TESTS_DEF
 FetchContent_Declare(
         nanopb
         GIT_REPOSITORY https://github.com/nanopb/nanopb.git
-        GIT_TAG 0.4.8
+        GIT_TAG 0.4.9.2
         GIT_SHALLOW TRUE
 )
 FetchContent_Declare(
         mbedtls
         GIT_REPOSITORY https://github.com/Mbed-TLS/mbedtls.git
-        GIT_TAG v3.6.0
+        GIT_TAG v3.6.7
         GIT_SHALLOW TRUE
 )
 
