@@ -44,21 +44,21 @@ namespace TeslaBLE {
         if (output_buffer == nullptr || output_size < 16) {
             return ResultCode::ERROR;
         }
-        auto it = this->shared_secrets_.find(domain);
-        if (it == this->shared_secrets_.end()) {
+        unsigned slot = static_cast<unsigned>(domain);
+        if (slot >= kDomainSlots || !this->has_shared_secret_[slot]) {
             return ResultCode::SESSION_INFO_NOT_LOADED;
         }
-        memcpy(output_buffer, it->second, 16);
+        memcpy(output_buffer, this->shared_secrets_[slot], 16);
         return ResultCode::SUCCESS;
     }
 
     void Authenticator::ClearSharedSecret(UniversalMessage_Domain domain) {
-        auto it = this->shared_secrets_.find(domain);
-        if (it == this->shared_secrets_.end()) {
+        unsigned slot = static_cast<unsigned>(domain);
+        if (slot >= kDomainSlots || !this->has_shared_secret_[slot]) {
             return;
         }
-        mbedtls_platform_zeroize(it->second, 16);
-        this->shared_secrets_.erase(it);
+        mbedtls_platform_zeroize(this->shared_secrets_[slot], 16);
+        this->has_shared_secret_[slot] = false;
     }
 
     int Authenticator::BuildKeyWhitelistMessage(Keys_Role role, unsigned char *output_buffer,
@@ -317,7 +317,16 @@ namespace TeslaBLE {
             return ResultCode::MBEDTLS_ERROR;
         }
 
-        memcpy(this->shared_secrets_[domain], sha1_digest, 16);
+        unsigned slot = static_cast<unsigned>(domain);
+        if (slot >= kDomainSlots) {
+            mbedtls_platform_zeroize(temp_shared_secret, sizeof(temp_shared_secret));
+            mbedtls_platform_zeroize(sha1_digest, sizeof(sha1_digest));
+            mbedtls_sha1_free(&sha1_context);
+            mbedtls_ecp_keypair_free(&tesla_key);
+            return ResultCode::ERROR;
+        }
+        memcpy(this->shared_secrets_[slot], sha1_digest, 16);
+        this->has_shared_secret_[slot] = true;
         mbedtls_platform_zeroize(temp_shared_secret, sizeof(temp_shared_secret));
         mbedtls_platform_zeroize(sha1_digest, sizeof(sha1_digest));
         mbedtls_sha1_free(&sha1_context);
@@ -352,8 +361,13 @@ namespace TeslaBLE {
         }
         memcpy(this->nonce_, nonce, 12);
 
+        unsigned slot = static_cast<unsigned>(domain);
+        if (slot >= kDomainSlots || !this->has_shared_secret_[slot]) {
+            mbedtls_gcm_free(&aes_context);
+            return ResultCode::SESSION_INFO_NOT_LOADED;
+        }
         int return_code = mbedtls_gcm_setkey(&aes_context, MBEDTLS_CIPHER_ID_AES,
-                                             this->shared_secrets_[domain],
+                                             this->shared_secrets_[slot],
                                              128);
 
         if (return_code != 0) {
@@ -419,8 +433,13 @@ namespace TeslaBLE {
         }
         mbedtls_gcm_context aes_context;
         mbedtls_gcm_init(&aes_context);
+        unsigned slot = static_cast<unsigned>(domain);
+        if (slot >= kDomainSlots || !this->has_shared_secret_[slot]) {
+            mbedtls_gcm_free(&aes_context);
+            return ResultCode::SESSION_INFO_NOT_LOADED;
+        }
         int return_code = mbedtls_gcm_setkey(&aes_context, MBEDTLS_CIPHER_ID_AES,
-                                             this->shared_secrets_[domain], 128);
+                                             this->shared_secrets_[slot], 128);
         if (return_code != 0) {
             mbedtls_gcm_free(&aes_context);
             return ResultCode::MBEDTLS_ERROR;
@@ -559,10 +578,10 @@ namespace TeslaBLE {
         mbedtls_pk_init(&this->private_key_context_);
         mbedtls_ecdh_init(&this->ecdh_context_);
         mbedtls_ctr_drbg_init(&this->drbg_context_);
-        for (auto &entry: this->shared_secrets_) {
-            mbedtls_platform_zeroize(entry.second, 16);
+        for (unsigned i = 0; i < kDomainSlots; i++) {
+            mbedtls_platform_zeroize(this->shared_secrets_[i], 16);
+            this->has_shared_secret_[i] = false;
         }
-        this->shared_secrets_.clear();
         this->private_key_loaded_ = false;
     }
 } // namespace TeslaBLE

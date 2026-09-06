@@ -11,7 +11,6 @@
 
 #include <shared.h>
 #include <keys.pb.h>
-#include <map>
 
 #include "pb.h"
 #include "mbedtls/ctr_drbg.h"
@@ -29,7 +28,9 @@ namespace TeslaBLE {
     unsigned char public_key_[65]{};
     unsigned char nonce_[12] = {};
     bool private_key_loaded_ = false;
-    std::map<UniversalMessage_Domain, unsigned char[16]> shared_secrets_;
+    static constexpr unsigned kDomainSlots = 4;
+    unsigned char shared_secrets_[kDomainSlots][16]{};
+    bool has_shared_secret_[kDomainSlots]{};
 
     int GeneratePublicKey();
 
