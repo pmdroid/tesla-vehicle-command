@@ -69,6 +69,7 @@ set(PROTOBUF_SOURCES
         src/common.pb.c
         src/errors.pb.c
         src/keys.pb.c
+        src/managed_charging.pb.c
         src/signatures.pb.c
         src/universal_message.pb.c
         src/vcsec.pb.c
@@ -107,6 +108,7 @@ set(PUBLIC_HEADERS
         include/common.pb.h
         include/errors.pb.h
         include/keys.pb.h
+        include/managed_charging.pb.h
         include/signatures.pb.h
         include/universal_message.pb.h
         include/vcsec.pb.h
