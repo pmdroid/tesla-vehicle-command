@@ -12,6 +12,7 @@ add_executable(tesla_ble_tests
         test_metadata.cpp
         test_ble.cpp
         test_commands.cpp
+        test_ecdh.cpp
 )
 target_include_directories(tesla_ble_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(tesla_ble_tests PRIVATE TeslaBLE Catch2::Catch2WithMain)

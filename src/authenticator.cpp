@@ -15,6 +15,7 @@
 #include <mbedtls/entropy.h>
 #include <mbedtls/gcm.h>
 #include <mbedtls/pk.h>
+#include <mbedtls/platform_util.h>
 #include <mbedtls/sha1.h>
 
 #include <pb.h>
@@ -26,13 +27,28 @@
 
 namespace TeslaBLE {
     void Authenticator::UpdateNonce() {
-        for (unsigned char &i: this->nonce_) {
-            i = rand() % 256;
+        if (Common::RandomBytes(this->nonce_, sizeof(this->nonce_)) != ResultCode::SUCCESS) {
+            for (unsigned char &i: this->nonce_) {
+                i = 0;
+            }
         }
     }
 
     void Authenticator::GetNonce(unsigned char *nonce) {
         memcpy(nonce, this->nonce_, 12);
+    }
+
+    int Authenticator::GetSharedSecret(UniversalMessage_Domain domain, unsigned char *output_buffer,
+                                       size_t output_size) {
+        if (output_buffer == nullptr || output_size < 16) {
+            return ResultCode::ERROR;
+        }
+        auto it = this->shared_secrets_.find(domain);
+        if (it == this->shared_secrets_.end()) {
+            return ResultCode::SESSION_INFO_NOT_LOADED;
+        }
+        memcpy(output_buffer, it->second, 16);
+        return ResultCode::SUCCESS;
     }
 
     int Authenticator::BuildKeyWhitelistMessage(Keys_Role role, unsigned char *output_buffer,
@@ -257,9 +273,13 @@ namespace TeslaBLE {
         mbedtls_sha1_context sha1_context;
         mbedtls_sha1_init(&sha1_context);
 
+        unsigned char sha1_digest[20];
         return_code = mbedtls_sha1_starts(&sha1_context);
         if (return_code != 0) {
             Common::PrintErrorFromMbedTlsErrorCode(return_code);
+            mbedtls_platform_zeroize(temp_shared_secret, sizeof(temp_shared_secret));
+            mbedtls_sha1_free(&sha1_context);
+            mbedtls_ecp_keypair_free(&tesla_key);
             return ResultCode::MBEDTLS_ERROR;
         }
 
@@ -267,15 +287,25 @@ namespace TeslaBLE {
                                           temp_shared_secret_length);
         if (return_code != 0) {
             Common::PrintErrorFromMbedTlsErrorCode(return_code);
+            mbedtls_platform_zeroize(temp_shared_secret, sizeof(temp_shared_secret));
+            mbedtls_sha1_free(&sha1_context);
+            mbedtls_ecp_keypair_free(&tesla_key);
             return ResultCode::MBEDTLS_ERROR;
         }
 
-        return_code = mbedtls_sha1_finish(&sha1_context, this->shared_secrets_[domain]);
+        return_code = mbedtls_sha1_finish(&sha1_context, sha1_digest);
         if (return_code != 0) {
             Common::PrintErrorFromMbedTlsErrorCode(return_code);
+            mbedtls_platform_zeroize(temp_shared_secret, sizeof(temp_shared_secret));
+            mbedtls_platform_zeroize(sha1_digest, sizeof(sha1_digest));
+            mbedtls_sha1_free(&sha1_context);
+            mbedtls_ecp_keypair_free(&tesla_key);
             return ResultCode::MBEDTLS_ERROR;
         }
 
+        memcpy(this->shared_secrets_[domain], sha1_digest, 16);
+        mbedtls_platform_zeroize(temp_shared_secret, sizeof(temp_shared_secret));
+        mbedtls_platform_zeroize(sha1_digest, sizeof(sha1_digest));
         mbedtls_sha1_free(&sha1_context);
         mbedtls_ecp_keypair_free(&tesla_key);
         return ResultCode::SUCCESS;

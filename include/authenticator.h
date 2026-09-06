@@ -57,6 +57,8 @@ namespace TeslaBLE {
 
     void GetNonce(unsigned char *nonce);
 
+    int GetSharedSecret(UniversalMessage_Domain domain, unsigned char *output_buffer, size_t output_size);
+
     void GetPublicKey(unsigned char *output_buffer, pb_size_t *output_size);
 
     void Cleanup();
