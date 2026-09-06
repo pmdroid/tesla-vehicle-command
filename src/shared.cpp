@@ -159,7 +159,9 @@ namespace TeslaBLE {
     int Common::EncodeRoutableMessage(UniversalMessage_RoutableMessage routable_message,
                                       unsigned char *output_buffer,
                                       size_t *output_size) {
-        Common::GenerateUUID(routable_message.uuid.bytes, &routable_message.uuid.size);
+        if (routable_message.uuid.size == 0) {
+            Common::GenerateUUID(routable_message.uuid.bytes, &routable_message.uuid.size);
+        }
 
         pb_ostream_t size_stream = {nullptr};
         if (!pb_encode(&size_stream, UniversalMessage_RoutableMessage_fields, &routable_message)) {

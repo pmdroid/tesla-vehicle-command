@@ -26,6 +26,7 @@ enum ResultCode : int {
     PRIVATE_KEY_NOT_LOADED = 40,
     SESSION_INFO_NOT_LOADED = 50,
     SESSION_INFO_KEY_NOT_WHITELISTED = 51,
+    SESSION_INFO_HMAC_INVALID = 52,
 };
 
 namespace TeslaBLE {

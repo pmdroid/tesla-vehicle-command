@@ -77,8 +77,17 @@ namespace TeslaBLE {
         return ResultCode::SUCCESS;
     }
 
+    void Session::SetRequestUuid(UniversalMessage_Domain domain, unsigned char *uuid, size_t uuid_size) {
+        size_t copy = uuid_size;
+        if (copy > 16) {
+            copy = 16;
+        }
+        memcpy(this->request_uuids_[domain], uuid, copy);
+        this->request_uuid_sizes_[domain] = copy;
+    }
+
     int Session::UpdateSessionInfo(UniversalMessage_Domain domain, unsigned char *session_info_message,
-                                   size_t session_info_length) {
+                                   size_t session_info_length, unsigned char *tag, size_t tag_length) {
         Signatures_SessionInfo session_info = Signatures_SessionInfo_init_zero;
 
         pb_istream_t stream = pb_istream_from_buffer(session_info_message, session_info_length);
@@ -115,6 +124,20 @@ namespace TeslaBLE {
             this->has_valid_session_info_[domain] = false;
             return result;
         }
+
+        auto uuid_size = this->request_uuid_sizes_.find(domain);
+        if (uuid_size == this->request_uuid_sizes_.end() || uuid_size->second == 0) {
+            this->has_valid_session_info_[domain] = false;
+            return ResultCode::SESSION_INFO_HMAC_INVALID;
+        }
+        result = this->authenticator_->VerifySessionInfoTag(
+            domain, this->vin_, this->request_uuids_[domain], uuid_size->second,
+            session_info_message, session_info_length, tag, tag_length);
+        if (result != ResultCode::SUCCESS) {
+            this->has_valid_session_info_[domain] = false;
+            return result;
+        }
+
         this->has_valid_session_info_[domain] = true;
         return ResultCode::SUCCESS;
     }
@@ -233,6 +256,9 @@ namespace TeslaBLE {
 
         routable_message.payload.session_info_request = session_info_request;
         routable_message.which_payload = UniversalMessage_RoutableMessage_session_info_request_tag;
+
+        Common::GenerateUUID(routable_message.uuid.bytes, &routable_message.uuid.size);
+        this->SetRequestUuid(domain, routable_message.uuid.bytes, routable_message.uuid.size);
 
         return Common::EncodeRoutableMessage(routable_message, output_buffer, output_length);
     }
