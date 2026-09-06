@@ -17,7 +17,7 @@ ESP-IDF supplies mbedtls. Keep `ESP_PLATFORM` so headers pick `mbedtls/esp_confi
 
 ## Arduino
 
-`examples/arduino` plus `arduino.sh`. Arduino-esp32 is mbedtls 2. Encrypt, decrypt, and key parse go through `MBEDTLS_VERSION_MAJOR` branches. Do not copy host mbedtls 3 sources into the Arduino sketch.
+`examples/arduino` plus `arduino.sh`. Arduino-esp32 is mbedtls 2. Encrypt, decrypt, and key parse go through `MBEDTLS_VERSION_MAJOR`.
 
 ## Tests
 

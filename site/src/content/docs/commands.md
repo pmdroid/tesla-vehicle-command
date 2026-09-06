@@ -3,7 +3,7 @@ title: Send commands
 description: CarServer and Security helpers, wrap, decode
 ---
 
-Helpers encode Tesla protobufs. They do not talk BLE.
+Helpers encode Tesla protobufs. You write the wrapped buffer over GATT.
 
 1. Call `CarServer::*` or `Security::*` into a buffer.
 2. Wrap with `Session::BuildRoutableMessage` on the matching domain.
@@ -39,7 +39,3 @@ Climate on/off, driver/passenger °C, seats, COP, bioweapon, climate keeper, cha
 `GetVehicleData` takes one `VehicleDataCategory` per request (BLE MTU). Categories: charge, climate, drive, location, closures, charge schedule, preconditioning schedule, tire pressure, media, media detail, software update, parental controls.
 
 Decode with `Common::DecodeCarServerResponse`.
-
-## Out of BLE scope
-
-`SetPINToDrive` is Fleet-only. HMAC-personalized is the HTTPS command MAC. tesla-http-proxy is the Go sidecar.

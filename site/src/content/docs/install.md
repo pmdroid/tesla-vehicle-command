@@ -3,7 +3,7 @@ title: Install
 description: Add TeslaBLE to a host, ESP-IDF, or Arduino project
 ---
 
-TeslaBLE is a static C++ library. It encodes Tesla vehicle-command messages and runs the BLE handshake. It does not open a BLE stack for you.
+TeslaBLE is a static C++ library. It encodes Tesla vehicle-command messages and runs the BLE handshake. Plug in SimpleBLE, NimBLE, or the Arduino BLE stack for scan and GATT.
 
 ## Host (CMake)
 
@@ -17,7 +17,7 @@ cmake --build build
 ctest --test-dir build --output-on-failure
 ```
 
-Point another CMake project at this tree with `add_subdirectory` and link `TeslaBLE`. When this repo is not the top-level project, tests stay off unless you pass `-DTESLA_BLE_BUILD_TESTS=ON`.
+Point another CMake project at this tree with `add_subdirectory` and link `TeslaBLE`. Tests are on when this repo is the top-level CMake project, or when you pass `-DTESLA_BLE_BUILD_TESTS=ON`.
 
 Headers live in `include/`. Call them as:
 
@@ -32,14 +32,10 @@ Headers live in `include/`. Call them as:
 
 ## ESP-IDF / PlatformIO
 
-`library.json` registers the library for PlatformIO on `espidf`. Add the GitHub URL as a lib dep, or copy `include/` and `src/` into the firmware tree. On ESP, mbedtls comes from ESP-IDF. Do not link the host FetchContent mbedtls.
+`library.json` registers the library for PlatformIO on `espidf`. Add the GitHub URL as a lib dep, or copy `include/` and `src/` into the firmware tree. On ESP, mbedtls comes from ESP-IDF.
 
 See `examples/esp32` (NimBLE, Seeed XIAO ESP32C3).
 
 ## Arduino
 
-`examples/arduino` plus `arduino.sh` pack a zip the Arduino IDE can import. Arduino-esp32 still uses mbedtls 2. The library keeps mbedtls 2 paths behind `MBEDTLS_VERSION_MAJOR`.
-
-## What this library is not
-
-Tesla Fleet HTTPS, `SetPINToDrive`, HMAC-personalized command MACs, and tesla-http-proxy are out of scope. Those live in teslamotors/vehicle-command (Go) on TLS, not BLE.
+`examples/arduino` plus `arduino.sh` pack a zip the Arduino IDE can import. Arduino-esp32 uses mbedtls 2 through `MBEDTLS_VERSION_MAJOR`.

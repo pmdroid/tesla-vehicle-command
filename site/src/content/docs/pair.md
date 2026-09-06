@@ -20,7 +20,7 @@ const unsigned char pem[] = "-----BEGIN EC PRIVATE KEY-----\n...\n-----END EC PR
 authenticator.LoadPrivateKey(pem, sizeof pem);
 ```
 
-Export it so the next boot does not mint a new key:
+Export the PEM and load it on the next boot:
 
 ```cpp
 unsigned char pem_out[256];
@@ -28,7 +28,7 @@ size_t pem_size = 0;
 authenticator.GetPrivateKey(pem_out, sizeof pem_out, &pem_size);
 ```
 
-`LoadPrivateKey` is on `Authenticator`, not `Session`.
+`Authenticator::LoadPrivateKey` takes the PEM bytes and size.
 
 ## Whitelist
 
@@ -52,4 +52,4 @@ The car replies with an operation status:
 | `OPERATIONSTATUS_WAIT` | Present the NFC card, then retry |
 | `OPERATIONSTATUS_ERROR` | Rejected |
 
-After a successful whitelist, request session info. If `UpdateSessionInfo` returns `SESSION_INFO_KEY_NOT_WHITELISTED`, the key never landed. The library decodes the VCSEC error before it accepts the session.
+After `OPERATIONSTATUS_OK`, request session info. `UpdateSessionInfo` decodes the VCSEC status before it stores epoch and counter.

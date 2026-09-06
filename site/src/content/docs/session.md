@@ -7,7 +7,7 @@ A session is per domain. VCSEC (`DOMAIN_VEHICLE_SECURITY`) and Infotainment (`DO
 
 ## Bind VIN and authenticator
 
-VIN is 17 bytes. `SetVIN` copies those 17 bytes. Do not rely on a trailing NUL.
+VIN is 17 bytes. `SetVIN` copies those 17 bytes.
 
 ```cpp
 TeslaBLE::Session session;
@@ -49,7 +49,7 @@ session.UpdateSessionInfo(
     tag_size);
 ```
 
-`UpdateSessionInfo` verifies the HMAC, then stores epoch, counter, and clock. A bad tag returns `SESSION_INFO_HMAC_INVALID` and drops the ECDH secret for that domain. A whitelist error is checked after a successful decode (`SESSION_INFO_KEY_NOT_WHITELISTED`).
+`UpdateSessionInfo` verifies the HMAC, then stores epoch, counter, and clock.
 
 ## Persist across reboot
 

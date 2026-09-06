@@ -23,8 +23,8 @@ import { Card, CardGrid } from '@astrojs/starlight/components';
 	<Card title="Two domains" icon="information">
 		Request session info on VCSEC and Infotainment. `Session::UpdateSessionInfo` checks the HMAC, then `BuildRoutableMessage` encrypts the payload.
 	</Card>
-	<Card title="Helpers, not a facade" icon="puzzle">
-		`CarServer::*` and `Security::*` encode Tesla actions. You own BLE write, ATT reassembly (`BleFrame`), and decode.
+	<Card title="Encode, wrap, write" icon="puzzle">
+		`CarServer::*` and `Security::*` encode Tesla actions. `Session::BuildRoutableMessage` encrypts them. `BleFrame` reassembles indications. You write the GATT characteristic.
 	</Card>
 	<Card title="Pinned to Tesla" icon="github">
 		Protos from teslamotors/vehicle-command `f97fa1e`. Host tests include Tesla protocol.md vectors and Go `proto.Marshal` goldens.

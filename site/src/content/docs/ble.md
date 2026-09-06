@@ -3,7 +3,7 @@ title: BLE framing
 description: Advertisement name, GATT UUIDs, length prefix, ATT reassembly
 ---
 
-This library does not scan or connect. Use SimpleBLE, NimBLE, or the Arduino BLE stack. Feed bytes in and out.
+Use SimpleBLE, NimBLE, or the Arduino BLE stack for scan and GATT. Feed indication bytes into `BleFrame` and write `BuildRoutableMessage` output to the write characteristic.
 
 ## Find the car
 
