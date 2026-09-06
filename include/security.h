@@ -41,6 +41,13 @@ namespace TeslaBLE {
         static int StopTonneau(unsigned char *buffer, size_t *buffer_size);
 
         static int GetStatus(unsigned char *buffer, size_t *buffer_size);
+
+        static int GetWhitelistInfo(unsigned char *buffer, size_t *buffer_size);
+
+        static int GetWhitelistEntryInfo(uint32_t slot, unsigned char *buffer, size_t *buffer_size);
+
+        static int RemoveKey(const unsigned char *public_key, size_t public_key_size, unsigned char *buffer,
+                             size_t *buffer_size);
     };
 } // TeslaBLE
 
