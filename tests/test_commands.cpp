@@ -191,3 +191,121 @@ TEST_CASE("DecodeCarServerResponse rejects truncated bytes") {
     REQUIRE(TeslaBLE::Common::DecodeCarServerResponse(buffer, sizeof buffer, &decoded) ==
             ResultCode::NANOPB_DECODE_ERROR);
 }
+
+static VCSEC_UnsignedMessage DecodeUnsigned(unsigned char *buffer, size_t size) {
+    VCSEC_UnsignedMessage message = VCSEC_UnsignedMessage_init_zero;
+    pb_istream_t stream = pb_istream_from_buffer(buffer, size);
+    REQUIRE(pb_decode(&stream, VCSEC_UnsignedMessage_fields, &message));
+    return message;
+}
+
+TEST_CASE("OpenTrunk encodes rearTrunk MOVE") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::Security::OpenTrunk(buffer, &size) == ResultCode::SUCCESS);
+    auto message = DecodeUnsigned(buffer, size);
+    REQUIRE(message.which_sub_message == VCSEC_UnsignedMessage_closureMoveRequest_tag);
+    REQUIRE(message.sub_message.closureMoveRequest.rearTrunk ==
+            VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_MOVE);
+    REQUIRE(message.sub_message.closureMoveRequest.frontTrunk ==
+            VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_NONE);
+}
+
+TEST_CASE("CloseTrunk encodes rearTrunk CLOSE") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::Security::CloseTrunk(buffer, &size) == ResultCode::SUCCESS);
+    auto message = DecodeUnsigned(buffer, size);
+    REQUIRE(message.sub_message.closureMoveRequest.rearTrunk ==
+            VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_CLOSE);
+}
+
+TEST_CASE("OpenFrunk encodes frontTrunk MOVE") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::Security::OpenFrunk(buffer, &size) == ResultCode::SUCCESS);
+    auto message = DecodeUnsigned(buffer, size);
+    REQUIRE(message.sub_message.closureMoveRequest.frontTrunk ==
+            VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_MOVE);
+}
+
+TEST_CASE("OpenTonneau encodes tonneau OPEN") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::Security::OpenTonneau(buffer, &size) == ResultCode::SUCCESS);
+    auto message = DecodeUnsigned(buffer, size);
+    REQUIRE(message.sub_message.closureMoveRequest.tonneau ==
+            VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_OPEN);
+}
+
+TEST_CASE("CloseTonneau encodes tonneau CLOSE") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::Security::CloseTonneau(buffer, &size) == ResultCode::SUCCESS);
+    auto message = DecodeUnsigned(buffer, size);
+    REQUIRE(message.sub_message.closureMoveRequest.tonneau ==
+            VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_CLOSE);
+}
+
+TEST_CASE("StopTonneau encodes tonneau STOP") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::Security::StopTonneau(buffer, &size) == ResultCode::SUCCESS);
+    auto message = DecodeUnsigned(buffer, size);
+    REQUIRE(message.sub_message.closureMoveRequest.tonneau ==
+            VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_STOP);
+}
+
+TEST_CASE("AutoSecure encodes RKE_ACTION_AUTO_SECURE_VEHICLE") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::Security::AutoSecure(buffer, &size) == ResultCode::SUCCESS);
+    auto message = DecodeUnsigned(buffer, size);
+    REQUIRE(message.which_sub_message == VCSEC_UnsignedMessage_RKEAction_tag);
+    REQUIRE(message.sub_message.RKEAction == VCSEC_RKEAction_E_RKE_ACTION_AUTO_SECURE_VEHICLE);
+}
+
+TEST_CASE("RemoteDrive encodes RKE_ACTION_REMOTE_DRIVE") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::Security::RemoteDrive(buffer, &size) == ResultCode::SUCCESS);
+    auto message = DecodeUnsigned(buffer, size);
+    REQUIRE(message.sub_message.RKEAction == VCSEC_RKEAction_E_RKE_ACTION_REMOTE_DRIVE);
+}
+
+TEST_CASE("GetStatus encodes INFORMATION_REQUEST_TYPE_GET_STATUS") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::Security::GetStatus(buffer, &size) == ResultCode::SUCCESS);
+    auto message = DecodeUnsigned(buffer, size);
+    REQUIRE(message.which_sub_message == VCSEC_UnsignedMessage_InformationRequest_tag);
+    REQUIRE(message.sub_message.InformationRequest.informationRequestType ==
+            VCSEC_InformationRequestType_INFORMATION_REQUEST_TYPE_GET_STATUS);
+}
+
+TEST_CASE("DecodeFromVCSECMessage reads vehicleStatus lock and sleep") {
+    VCSEC_FromVCSECMessage status = VCSEC_FromVCSECMessage_init_zero;
+    status.which_sub_message = VCSEC_FromVCSECMessage_vehicleStatus_tag;
+    status.sub_message.vehicleStatus.vehicleLockState =
+        VCSEC_VehicleLockState_E_VEHICLELOCKSTATE_LOCKED;
+    status.sub_message.vehicleStatus.vehicleSleepStatus =
+        VCSEC_VehicleSleepStatus_E_VEHICLE_SLEEP_STATUS_ASLEEP;
+    status.sub_message.vehicleStatus.has_closureStatuses = true;
+    status.sub_message.vehicleStatus.closureStatuses.rearTrunk =
+        VCSEC_ClosureState_E_CLOSURESTATE_CLOSED;
+
+    unsigned char buffer[64];
+    pb_ostream_t out = pb_ostream_from_buffer(buffer, sizeof buffer);
+    REQUIRE(pb_encode(&out, VCSEC_FromVCSECMessage_fields, &status));
+
+    VCSEC_FromVCSECMessage decoded = VCSEC_FromVCSECMessage_init_zero;
+    REQUIRE(TeslaBLE::Common::DecodeFromVCSECMessage(buffer, out.bytes_written, &decoded) ==
+            ResultCode::SUCCESS);
+    REQUIRE(decoded.which_sub_message == VCSEC_FromVCSECMessage_vehicleStatus_tag);
+    REQUIRE(decoded.sub_message.vehicleStatus.vehicleLockState ==
+            VCSEC_VehicleLockState_E_VEHICLELOCKSTATE_LOCKED);
+    REQUIRE(decoded.sub_message.vehicleStatus.vehicleSleepStatus ==
+            VCSEC_VehicleSleepStatus_E_VEHICLE_SLEEP_STATUS_ASLEEP);
+    REQUIRE(decoded.sub_message.vehicleStatus.closureStatuses.rearTrunk ==
+            VCSEC_ClosureState_E_CLOSURESTATE_CLOSED);
+}
