@@ -164,14 +164,8 @@ namespace TeslaBLE {
             }
         }
 
-        pb_ostream_t size_stream = {nullptr};
-        if (!pb_encode(&size_stream, UniversalMessage_RoutableMessage_fields, &routable_message)) {
-            printf("Failed to encode message: %s", PB_GET_ERROR(&size_stream));
-            return ResultCode::NANOPB_ENCODE_ERROR;
-        }
-
-        uint8_t message_buffer[size_stream.bytes_written];
-        pb_ostream_t message_stream = pb_ostream_from_buffer(message_buffer, size_stream.bytes_written);
+        uint8_t message_buffer[UniversalMessage_RoutableMessage_size];
+        pb_ostream_t message_stream = pb_ostream_from_buffer(message_buffer, sizeof(message_buffer));
         if (!pb_encode(&message_stream, UniversalMessage_RoutableMessage_fields, &routable_message)) {
             printf("Failed to encode message: %s", PB_GET_ERROR(&message_stream));
             return ResultCode::NANOPB_ENCODE_ERROR;

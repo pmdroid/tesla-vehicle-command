@@ -29,7 +29,7 @@ option(TESLA_BLE_BUILD_TESTS "Build host unit tests" ${TESLA_BLE_BUILD_TESTS_DEF
 FetchContent_Declare(
         nanopb
         GIT_REPOSITORY https://github.com/nanopb/nanopb.git
-        GIT_TAG master
+        GIT_TAG 0.4.8
         GIT_SHALLOW TRUE
 )
 FetchContent_Declare(

@@ -5,8 +5,6 @@
 #ifndef TESLA_BLE_SESSION_H
 #define TESLA_BLE_SESSION_H
 
-#include <map>
-
 #include <car_server.pb.h>
 #include <universal_message.pb.h>
 
@@ -15,18 +13,19 @@
 
 namespace TeslaBLE {
     class Session {
-        std::map<UniversalMessage_Domain, uint32_t> time_zeros_;
-        std::map<UniversalMessage_Domain, uint32_t> counters_;
-        std::map<UniversalMessage_Domain, unsigned char[16]> epochs_;
-        std::map<UniversalMessage_Domain, uint32_t> clock_times_;
-        std::map<UniversalMessage_Domain, unsigned char[65]> car_keys;
-        std::map<UniversalMessage_Domain, size_t> car_key_sizes;
+        static constexpr unsigned kDomainSlots = 4;
+        uint32_t time_zeros_[kDomainSlots]{};
+        uint32_t counters_[kDomainSlots]{};
+        unsigned char epochs_[kDomainSlots][16]{};
+        uint32_t clock_times_[kDomainSlots]{};
+        unsigned char car_keys[kDomainSlots][65]{};
+        size_t car_key_sizes[kDomainSlots]{};
+        bool has_valid_session_info_[kDomainSlots]{};
+        unsigned char request_uuids_[kDomainSlots][16]{};
+        size_t request_uuid_sizes_[kDomainSlots]{};
 
         unsigned char vin_[17]{};
         unsigned char routing_address_[16]{};
-        std::map<UniversalMessage_Domain, bool> has_valid_session_info_;
-        std::map<UniversalMessage_Domain, unsigned char[16]> request_uuids_;
-        std::map<UniversalMessage_Domain, size_t> request_uuid_sizes_;
 
         MetaData meta_data_ = MetaData{};
         Authenticator *authenticator_ = nullptr;
@@ -59,6 +58,8 @@ namespace TeslaBLE {
         void SetVIN(unsigned char *vin);
 
         int ExportSessionInfo(UniversalMessage_Domain domain, unsigned char *output_buffer, size_t *output_size);
+
+        int ImportSessionInfo(UniversalMessage_Domain domain, unsigned char *input_buffer, size_t input_size);
     };
 } // TeslaBLE
 
