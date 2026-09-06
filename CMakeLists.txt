@@ -53,6 +53,7 @@ set(COMMON_SOURCES
         src/shared.cpp
         src/carserver.cpp
         src/security.cpp
+        src/ble_frame.cpp
 )
 
 # NanoPB source files
@@ -101,6 +102,7 @@ set(PUBLIC_HEADERS
         include/shared.h
         include/carserver.h
         include/security.h
+        include/ble_frame.h
         include/car_server.pb.h
         include/common.pb.h
         include/errors.pb.h

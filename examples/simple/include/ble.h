@@ -2,6 +2,7 @@
 #define BLE_H
 
 #include <functional>
+#include <ble_frame.h>
 #include <universal_message.pb.h>
 #include <simpleble/Adapter.h>
 #include <simpleble/Peripheral.h>
@@ -9,9 +10,7 @@
 namespace TeslaBLE {
     class BLE {
     private:
-        size_t MAX_MESSAGE_SIZE = 1024;
-        size_t current_message_size = 0;
-        std::vector<unsigned char> message_buffer;
+        BleFrame frame_;
         std::function<void(UniversalMessage_RoutableMessage routable_message)> message_handler;
         SimpleBLE::Peripheral peripheral;
         bool debug_enabled = false;

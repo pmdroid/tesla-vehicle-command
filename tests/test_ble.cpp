@@ -4,6 +4,7 @@
 #include <string>
 #include <cstdlib>
 
+#include <ble_frame.h>
 #include <shared.h>
 
 TEST_CASE("BLE advertisement name matches Tesla protocol.md example") {
@@ -20,6 +21,32 @@ TEST_CASE("HexStrToUint8 returns null on invalid digits") {
     REQUIRE(ok != nullptr);
     REQUIRE(ok[0] == 0x0a);
     free(ok);
+}
+
+TEST_CASE("BleFrame waits for the full payload across ATT fragments") {
+    unsigned char payload[5] = {0xAA, 0xBB, 0xCC, 0xDD, 0xEE};
+    unsigned char framed[7];
+    size_t framed_size = 0;
+    TeslaBLE::Common::PrependLength(payload, sizeof(payload), framed, &framed_size);
+
+    TeslaBLE::BleFrame frame;
+    REQUIRE(frame.Add(framed, 4) == TeslaBLE::BleFrame::NEED_MORE);
+    REQUIRE(frame.Add(framed + 4, 3) == TeslaBLE::BleFrame::COMPLETE);
+    REQUIRE(frame.PayloadSize() == 5);
+    REQUIRE(memcmp(frame.Payload(), payload, 5) == 0);
+}
+
+TEST_CASE("BleFrame does not complete after the second fragment if more remain") {
+    unsigned char payload[6] = {1, 2, 3, 4, 5, 6};
+    unsigned char framed[8];
+    size_t framed_size = 0;
+    TeslaBLE::Common::PrependLength(payload, sizeof(payload), framed, &framed_size);
+
+    TeslaBLE::BleFrame frame;
+    REQUIRE(frame.Add(framed, 4) == TeslaBLE::BleFrame::NEED_MORE);
+    REQUIRE(frame.Add(framed + 4, 2) == TeslaBLE::BleFrame::NEED_MORE);
+    REQUIRE(frame.Add(framed + 6, 2) == TeslaBLE::BleFrame::COMPLETE);
+    REQUIRE(frame.PayloadSize() == 6);
 }
 
 TEST_CASE("BLE length prefix is two-byte big-endian") {
