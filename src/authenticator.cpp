@@ -479,6 +479,7 @@ namespace TeslaBLE {
             mbedtls_gcm_free(&aes_context);
             return ResultCode::MBEDTLS_ERROR;
         }
+#if MBEDTLS_VERSION_MAJOR >= 3
         return_code = mbedtls_gcm_starts(&aes_context, MBEDTLS_GCM_DECRYPT, nonce, 12);
         if (return_code != 0) {
             mbedtls_gcm_free(&aes_context);
@@ -507,6 +508,20 @@ namespace TeslaBLE {
             memcpy(output_buffer + *output_size, finish_buffer, finish_buffer_length);
             *output_size += finish_buffer_length;
         }
+#else
+        return_code = mbedtls_gcm_starts(&aes_context, MBEDTLS_GCM_DECRYPT, nonce, 12, checksum, 32);
+        if (return_code != 0) {
+            mbedtls_gcm_free(&aes_context);
+            return ResultCode::MBEDTLS_ERROR;
+        }
+        mbedtls_gcm_update(&aes_context, input_buffer_size, input_buffer, output_buffer);
+        return_code = mbedtls_gcm_finish(&aes_context, tag, 16);
+        mbedtls_gcm_free(&aes_context);
+        if (return_code != 0) {
+            return ResultCode::MBEDTLS_ERROR;
+        }
+        *output_size = input_buffer_size;
+#endif
         return ResultCode::SUCCESS;
     }
 
