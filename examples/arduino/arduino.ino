@@ -1,5 +1,6 @@
 #include <session.h>
 #include <shared.h>
+#include <ble_frame.h>
 #include <authenticator.h>
 #include <iostream>
 #include <security.h>
@@ -20,8 +21,7 @@ TeslaBLE::Authenticator authenticator = TeslaBLE::Authenticator{};
 TeslaBLE::Session session = TeslaBLE::Session{};
 
 static boolean doConnect = true;
-unsigned char ble_buffer[200];
-size_t current_message_size = 0;
+TeslaBLE::BleFrame ble_frame;
 
 size_t action_message_buffer_size = 0;
 unsigned char action_message_buffer[50];
@@ -36,8 +36,8 @@ void setup() {
   NimBLEDevice::init("TeslaBLE");  
   
   const char *vin = "XP7YGCEL0NB000000";
-  unsigned char private_key[227] =
-          "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEICrUkL0StUxZNhVRkK+QmeGDXVQvyjB6Iar8WQu3dDrloAoGCCqGSM49\nAwEHoUQDQgAEsvEtszFQqp8a83gIXsRBaS3UhOf6dgQDBoZWXSXIozABiawOfNF/\nOydB4e9zX5DiZYwTnUbWYlpqMk08cn4ZeA==\n-----END EC PRIVATE KEY-----";
+  unsigned char private_key[] =
+          "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEICU4zcKal8GcHpmmN9bPT4yXDBGLVu3h5jI+bRYsSzDboAoGCCqGSM49\nAwEHoUQDQgAEsra8aMLaBmXOZWgVWUmWxiOU7di+qQX+eBp1T+aoRacUMwkC8iXp\nJp1GbgWzSZgf2p2FzCPG+0RKpztikQXcbg==\n-----END EC PRIVATE KEY-----\n";
   
   authenticator.LoadPrivateKey(private_key, sizeof private_key);
   
@@ -48,12 +48,14 @@ void setup() {
 
 
 void handleMessage() {
-        TeslaBLE::Common::DumpHexBuffer("RX: ", ble_buffer, current_message_size);
+        TeslaBLE::Common::DumpHexBuffer("RX: ", const_cast<unsigned char *>(ble_frame.Payload()),
+                                        ble_frame.PayloadSize());
 
         UniversalMessage_RoutableMessage routable_message = UniversalMessage_RoutableMessage_init_zero;
-        TeslaBLE::Common::DecodeRoutableMessage(ble_buffer, current_message_size, &routable_message);
+        TeslaBLE::Common::DecodeRoutableMessage(const_cast<unsigned char *>(ble_frame.Payload()),
+                                                ble_frame.PayloadSize(), &routable_message);
 
-        current_message_size = 0;
+        ble_frame.Reset();
 
         if (routable_message.has_to_destination && routable_message.to_destination.sub_destination.
         domain == UniversalMessage_Domain_DOMAIN_BROADCAST) {
@@ -100,30 +102,12 @@ void handleMessage() {
 void notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, uint8_t *pData,
               size_t length, bool isNotify)
 {
-    unsigned char input_buffer[length];
-    memcpy(&input_buffer, pData, length);
-    const size_t size = TeslaBLE::Common::ExtractLength(input_buffer);
-
-    if (current_message_size == 0 && size > length) {
-            current_message_size = 0;
-
-            size_t payload_size = length - 2;
-            memcpy(ble_buffer, input_buffer + 2, payload_size);
-            current_message_size = payload_size;
-            return;
-        }
-
-        if (current_message_size > 0) {
-            memcpy(ble_buffer + current_message_size, input_buffer, length);
-            current_message_size = current_message_size + length;
-            handleMessage();
-            return;
-        }
-
-        size_t payload_size = length - 2;
-        memcpy(ble_buffer, input_buffer + 2, payload_size);
-        current_message_size = payload_size;
+    auto status = ble_frame.Add(pData, length);
+    if (status == TeslaBLE::BleFrame::COMPLETE) {
         handleMessage();
+    } else if (status == TeslaBLE::BleFrame::ERROR) {
+        ble_frame.Reset();
+    }
 }
 
 

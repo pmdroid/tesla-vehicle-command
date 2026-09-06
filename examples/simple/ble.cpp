@@ -58,8 +58,8 @@ void message_handler(UniversalMessage_RoutableMessage routable_message) {
 
 int main() {
     const char *vin = "XP7YGCEL0NB000000";
-    unsigned char private_key[227] =
-            "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEICrUkL0StUxZNhVRkK+QmeGDXVQvyjB6Iar8WQu3dDrloAoGCCqGSM49\nAwEHoUQDQgAEsvEtszFQqp8a83gIXsRBaS3UhOf6dgQDBoZWXSXIozABiawOfNF/\nOydB4e9zX5DiZYwTnUbWYlpqMk08cn4ZeA==\n-----END EC PRIVATE KEY-----";
+    unsigned char private_key[] =
+            "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEICU4zcKal8GcHpmmN9bPT4yXDBGLVu3h5jI+bRYsSzDboAoGCCqGSM49\nAwEHoUQDQgAEsra8aMLaBmXOZWgVWUmWxiOU7di+qQX+eBp1T+aoRacUMwkC8iXp\nJp1GbgWzSZgf2p2FzCPG+0RKpztikQXcbg==\n-----END EC PRIVATE KEY-----\n";
 
     TeslaBLE::Authenticator authenticator = TeslaBLE::Authenticator{};
     authenticator.LoadPrivateKey(private_key, sizeof private_key);
