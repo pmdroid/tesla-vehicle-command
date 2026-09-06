@@ -44,6 +44,8 @@ namespace TeslaBLE {
 
         static size_t ExtractLength(unsigned char *input_buffer);
 
+        static int RandomBytes(unsigned char *output_buffer, size_t output_size);
+
         static void GenerateUUID(unsigned char *output_buffer, uint16_t *output_size);
 
         static int DecodeRoutableMessage(unsigned char *buffer, size_t buffer_size,

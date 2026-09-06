@@ -23,8 +23,9 @@ namespace TeslaBLE {
     }
 
     void Session::GenerateRoutingAddress() {
-        for (int i = 0; i < sizeof(this->routing_address_); i++) {
-            this->routing_address_[i] = rand() % 256;
+        if (Common::RandomBytes(this->routing_address_, sizeof(this->routing_address_)) !=
+            ResultCode::SUCCESS) {
+            memset(this->routing_address_, 0, sizeof(this->routing_address_));
         }
     }
 

@@ -8,6 +8,8 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include <mbedtls/ctr_drbg.h>
+#include <mbedtls/entropy.h>
 #include <mbedtls/error.h>
 #include <mbedtls/sha1.h>
 
@@ -100,10 +102,33 @@ namespace TeslaBLE {
         return length;
     }
 
+    int Common::RandomBytes(unsigned char *output_buffer, size_t output_size) {
+        if (output_buffer == nullptr || output_size == 0) {
+            return ResultCode::ERROR;
+        }
+        mbedtls_entropy_context entropy;
+        mbedtls_ctr_drbg_context drbg;
+        mbedtls_entropy_init(&entropy);
+        mbedtls_ctr_drbg_init(&drbg);
+        int return_code = mbedtls_ctr_drbg_seed(&drbg, mbedtls_entropy_func, &entropy, nullptr, 0);
+        if (return_code != 0) {
+            mbedtls_ctr_drbg_free(&drbg);
+            mbedtls_entropy_free(&entropy);
+            return ResultCode::MBEDTLS_ERROR;
+        }
+        return_code = mbedtls_ctr_drbg_random(&drbg, output_buffer, output_size);
+        mbedtls_ctr_drbg_free(&drbg);
+        mbedtls_entropy_free(&entropy);
+        if (return_code != 0) {
+            return ResultCode::MBEDTLS_ERROR;
+        }
+        return ResultCode::SUCCESS;
+    }
+
     void Common::GenerateUUID(unsigned char *output_buffer, uint16_t *output_size) {
         unsigned char uuid[16];
-        for (int i = 0; i < sizeof(uuid); i++) {
-            uuid[i] = rand() % 256;
+        if (Common::RandomBytes(uuid, sizeof(uuid)) != ResultCode::SUCCESS) {
+            memset(uuid, 0, sizeof(uuid));
         }
         memcpy(output_buffer, uuid, sizeof(uuid));
         *output_size = sizeof(uuid);
