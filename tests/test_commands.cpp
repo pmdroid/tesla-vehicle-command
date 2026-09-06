@@ -1,8 +1,12 @@
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/generators/catch_generators.hpp>
 
+#include <cstring>
+
+#include <authenticator.h>
 #include <car_server.pb.h>
 #include <carserver.h>
+#include <keys.pb.h>
 #include <pb_decode.h>
 #include <pb_encode.h>
 #include <security.h>
@@ -308,4 +312,79 @@ TEST_CASE("DecodeFromVCSECMessage reads vehicleStatus lock and sleep") {
             VCSEC_VehicleSleepStatus_E_VEHICLE_SLEEP_STATUS_ASLEEP);
     REQUIRE(decoded.sub_message.vehicleStatus.closureStatuses.rearTrunk ==
             VCSEC_ClosureState_E_CLOSURESTATE_CLOSED);
+}
+
+TEST_CASE("GetWhitelistInfo encodes GET_WHITELIST_INFO") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::Security::GetWhitelistInfo(buffer, &size) == ResultCode::SUCCESS);
+    auto message = DecodeUnsigned(buffer, size);
+    REQUIRE(message.which_sub_message == VCSEC_UnsignedMessage_InformationRequest_tag);
+    REQUIRE(message.sub_message.InformationRequest.informationRequestType ==
+            VCSEC_InformationRequestType_INFORMATION_REQUEST_TYPE_GET_WHITELIST_INFO);
+}
+
+TEST_CASE("GetWhitelistEntryInfo encodes slot") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::Security::GetWhitelistEntryInfo(3, buffer, &size) == ResultCode::SUCCESS);
+    auto message = DecodeUnsigned(buffer, size);
+    REQUIRE(message.sub_message.InformationRequest.informationRequestType ==
+            VCSEC_InformationRequestType_INFORMATION_REQUEST_TYPE_GET_WHITELIST_ENTRY_INFO);
+    REQUIRE(message.sub_message.InformationRequest.which_key == VCSEC_InformationRequest_slot_tag);
+    REQUIRE(message.sub_message.InformationRequest.key.slot == 3);
+}
+
+TEST_CASE("RemoveKey encodes the public key") {
+    unsigned char pubkey[65];
+    memset(pubkey, 0x04, sizeof pubkey);
+    unsigned char buffer[128];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::Security::RemoveKey(pubkey, sizeof pubkey, buffer, &size) == ResultCode::SUCCESS);
+    auto message = DecodeUnsigned(buffer, size);
+    REQUIRE(message.which_sub_message == VCSEC_UnsignedMessage_WhitelistOperation_tag);
+    REQUIRE(message.sub_message.WhitelistOperation.which_sub_message ==
+            VCSEC_WhitelistOperation_removePublicKeyFromWhitelist_tag);
+    REQUIRE(message.sub_message.WhitelistOperation.sub_message.removePublicKeyFromWhitelist.PublicKeyRaw.size ==
+            65);
+    REQUIRE(message.sub_message.WhitelistOperation.sub_message.removePublicKeyFromWhitelist.PublicKeyRaw.bytes[0] ==
+            0x04);
+}
+
+TEST_CASE("RemoveKey rejects an empty key") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::Security::RemoveKey(nullptr, 65, buffer, &size) == ResultCode::ERROR);
+    unsigned char pubkey[1] = {0};
+    REQUIRE(TeslaBLE::Security::RemoveKey(pubkey, 0, buffer, &size) == ResultCode::ERROR);
+}
+
+TEST_CASE("BuildKeyWhitelistMessage accepts ROLE_GUEST") {
+    const unsigned char client_pem[] =
+        "-----BEGIN EC PRIVATE KEY-----\n"
+        "MHcCAQEEICU4zcKal8GcHpmmN9bPT4yXDBGLVu3h5jI+bRYsSzDboAoGCCqGSM49\n"
+        "AwEHoUQDQgAEsra8aMLaBmXOZWgVWUmWxiOU7di+qQX+eBp1T+aoRacUMwkC8iXp\n"
+        "Jp1GbgWzSZgf2p2FzCPG+0RKpztikQXcbg==\n"
+        "-----END EC PRIVATE KEY-----\n";
+    TeslaBLE::Authenticator authenticator;
+    REQUIRE(authenticator.LoadPrivateKey(client_pem, sizeof(client_pem)) == ResultCode::SUCCESS);
+
+    unsigned char buffer[256];
+    size_t size = 0;
+    REQUIRE(authenticator.BuildKeyWhitelistMessage(Keys_Role_ROLE_GUEST,
+                                                   VCSEC_KeyFormFactor_KEY_FORM_FACTOR_ANDROID_DEVICE, buffer,
+                                                   &size) == ResultCode::SUCCESS);
+    REQUIRE(size > 2);
+
+    VCSEC_ToVCSECMessage envelope = VCSEC_ToVCSECMessage_init_zero;
+    pb_istream_t envelope_stream = pb_istream_from_buffer(buffer + 2, size - 2);
+    REQUIRE(pb_decode(&envelope_stream, VCSEC_ToVCSECMessage_fields, &envelope));
+    REQUIRE(envelope.has_signedMessage);
+
+    VCSEC_UnsignedMessage inner = VCSEC_UnsignedMessage_init_zero;
+    pb_istream_t inner_stream = pb_istream_from_buffer(envelope.signedMessage.protobufMessageAsBytes.bytes,
+                                                       envelope.signedMessage.protobufMessageAsBytes.size);
+    REQUIRE(pb_decode(&inner_stream, VCSEC_UnsignedMessage_fields, &inner));
+    REQUIRE(inner.sub_message.WhitelistOperation.sub_message.addKeyToWhitelistAndAddPermissions.keyRole ==
+            Keys_Role_ROLE_GUEST);
 }

@@ -5,6 +5,7 @@
 #include "security.h"
 
 #include <cstdio>
+#include <cstring>
 
 #include <vcsec.pb.h>
 
@@ -109,6 +110,43 @@ namespace TeslaBLE {
         unsigned_message.which_sub_message = VCSEC_UnsignedMessage_InformationRequest_tag;
         unsigned_message.sub_message.InformationRequest.informationRequestType =
             VCSEC_InformationRequestType_INFORMATION_REQUEST_TYPE_GET_STATUS;
+        return Security::BuildUnsignedMessage(&unsigned_message, buffer, buffer_size);
+    }
+
+    int Security::GetWhitelistInfo(unsigned char *buffer, size_t *buffer_size) {
+        VCSEC_UnsignedMessage unsigned_message = VCSEC_UnsignedMessage_init_zero;
+        unsigned_message.which_sub_message = VCSEC_UnsignedMessage_InformationRequest_tag;
+        unsigned_message.sub_message.InformationRequest.informationRequestType =
+            VCSEC_InformationRequestType_INFORMATION_REQUEST_TYPE_GET_WHITELIST_INFO;
+        return Security::BuildUnsignedMessage(&unsigned_message, buffer, buffer_size);
+    }
+
+    int Security::GetWhitelistEntryInfo(uint32_t slot, unsigned char *buffer, size_t *buffer_size) {
+        VCSEC_UnsignedMessage unsigned_message = VCSEC_UnsignedMessage_init_zero;
+        unsigned_message.which_sub_message = VCSEC_UnsignedMessage_InformationRequest_tag;
+        unsigned_message.sub_message.InformationRequest.informationRequestType =
+            VCSEC_InformationRequestType_INFORMATION_REQUEST_TYPE_GET_WHITELIST_ENTRY_INFO;
+        unsigned_message.sub_message.InformationRequest.which_key = VCSEC_InformationRequest_slot_tag;
+        unsigned_message.sub_message.InformationRequest.key.slot = slot;
+        return Security::BuildUnsignedMessage(&unsigned_message, buffer, buffer_size);
+    }
+
+    int Security::RemoveKey(const unsigned char *public_key, size_t public_key_size, unsigned char *buffer,
+                            size_t *buffer_size) {
+        if (public_key == nullptr || public_key_size == 0 ||
+            public_key_size > sizeof(VCSEC_PublicKey_PublicKeyRaw_t().bytes)) {
+            return ResultCode::ERROR;
+        }
+
+        VCSEC_UnsignedMessage unsigned_message = VCSEC_UnsignedMessage_init_zero;
+        unsigned_message.which_sub_message = VCSEC_UnsignedMessage_WhitelistOperation_tag;
+        unsigned_message.sub_message.WhitelistOperation.which_sub_message =
+            VCSEC_WhitelistOperation_removePublicKeyFromWhitelist_tag;
+        memcpy(unsigned_message.sub_message.WhitelistOperation.sub_message.removePublicKeyFromWhitelist.PublicKeyRaw
+                   .bytes,
+               public_key, public_key_size);
+        unsigned_message.sub_message.WhitelistOperation.sub_message.removePublicKeyFromWhitelist.PublicKeyRaw.size =
+            public_key_size;
         return Security::BuildUnsignedMessage(&unsigned_message, buffer, buffer_size);
     }
 } // TeslaBLE
