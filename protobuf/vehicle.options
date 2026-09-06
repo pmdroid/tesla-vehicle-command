@@ -1,0 +1,44 @@
+CarServer.ClosuresState.timestamp type:FT_IGNORE
+CarServer.ChargeScheduleState.timestamp type:FT_IGNORE
+CarServer.PreconditioningScheduleState.timestamp type:FT_IGNORE
+CarServer.ParentalControlsState.timestamp type:FT_IGNORE
+CarServer.SoftwareUpdateState.timestamp type:FT_IGNORE
+CarServer.DriveState.timestamp type:FT_IGNORE
+CarServer.DriveState.last_traffic_update type:FT_IGNORE
+CarServer.ChargeState.scheduled_departure_time type:FT_IGNORE
+CarServer.ChargeState.timestamp type:FT_IGNORE
+CarServer.LocationState.timestamp type:FT_IGNORE
+CarServer.ClimateState.timestamp type:FT_IGNORE
+CarServer.TirePressureState.timestamp type:FT_IGNORE
+CarServer.TirePressureState.tpms_last_seen_pressure_time_fl type:FT_IGNORE
+CarServer.TirePressureState.tpms_last_seen_pressure_time_fr type:FT_IGNORE
+CarServer.TirePressureState.tpms_last_seen_pressure_time_rl type:FT_IGNORE
+CarServer.TirePressureState.tpms_last_seen_pressure_time_rr type:FT_IGNORE
+CarServer.MediaState.timestamp type:FT_IGNORE
+CarServer.MediaDetailState.timestamp type:FT_IGNORE
+
+CarServer.ChargeState.managed_charging_state type:FT_IGNORE
+CarServer.ChargeState.powershare_feature_allowed type:FT_IGNORE
+CarServer.ChargeState.powershare_feature_enabled type:FT_IGNORE
+CarServer.ChargeState.powershare_request type:FT_IGNORE
+CarServer.ChargeState.powershare_type type:FT_IGNORE
+CarServer.ChargeState.powershare_status type:FT_IGNORE
+CarServer.ChargeState.powershare_stop_reason type:FT_IGNORE
+CarServer.ChargeState.powershare_instantaneous_load_kw type:FT_IGNORE
+CarServer.ChargeState.powershare_vehicle_energy_left_hr type:FT_IGNORE
+CarServer.ChargeState.powershare_soc_limit type:FT_IGNORE
+
+CarServer.ChargeScheduleState.charge_schedules max_count:8
+CarServer.PreconditioningScheduleState.precondition_schedules max_count:8
+
+CarServer.SoftwareUpdateState.version max_size:32
+CarServer.DriveState.active_route_destination max_size:64
+CarServer.LocationState.location_name max_size:32
+CarServer.MediaState.now_playing_artist max_size:64
+CarServer.MediaState.now_playing_title max_size:64
+CarServer.MediaDetailState.now_playing_source_string max_size:32
+CarServer.MediaDetailState.now_playing_album max_size:64
+CarServer.MediaDetailState.now_playing_station max_size:64
+CarServer.MediaDetailState.a2dp_source_name max_size:32
+CarServer.ManagedChargingState.charge_on_solar_gateway_din max_size:32
+CarServer.ManagedChargingState.tesla_electric_asset_id max_size:32

@@ -12,12 +12,42 @@ namespace TeslaBLE {
         static int BuildUnsignedMessage(const VCSEC_UnsignedMessage *unsigned_message, unsigned char *buffer,
                                         size_t *buffer_size);
 
+        static int BuildRkeAction(VCSEC_RKEAction_E action, unsigned char *buffer, size_t *buffer_size);
+
+        static int BuildClosureMove(VCSEC_ClosureMoveType_E rear_trunk, VCSEC_ClosureMoveType_E front_trunk,
+                                    VCSEC_ClosureMoveType_E tonneau, unsigned char *buffer, size_t *buffer_size);
+
     public:
         static int Unlock(unsigned char *buffer, size_t *buffer_size);
 
         static int Lock(unsigned char *buffer, size_t *buffer_size);
 
         static int Wake(unsigned char *buffer, size_t *buffer_size);
+
+        static int AutoSecure(unsigned char *buffer, size_t *buffer_size);
+
+        static int RemoteDrive(unsigned char *buffer, size_t *buffer_size);
+
+        static int OpenTrunk(unsigned char *buffer, size_t *buffer_size);
+
+        static int CloseTrunk(unsigned char *buffer, size_t *buffer_size);
+
+        static int OpenFrunk(unsigned char *buffer, size_t *buffer_size);
+
+        static int OpenTonneau(unsigned char *buffer, size_t *buffer_size);
+
+        static int CloseTonneau(unsigned char *buffer, size_t *buffer_size);
+
+        static int StopTonneau(unsigned char *buffer, size_t *buffer_size);
+
+        static int GetStatus(unsigned char *buffer, size_t *buffer_size);
+
+        static int GetWhitelistInfo(unsigned char *buffer, size_t *buffer_size);
+
+        static int GetWhitelistEntryInfo(uint32_t slot, unsigned char *buffer, size_t *buffer_size);
+
+        static int RemoveKey(const unsigned char *public_key, size_t public_key_size, unsigned char *buffer,
+                             size_t *buffer_size);
     };
 } // TeslaBLE
 

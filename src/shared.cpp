@@ -8,6 +8,8 @@
 #include <cstdio>
 #include <cstdlib>
 
+#include <mbedtls/ctr_drbg.h>
+#include <mbedtls/entropy.h>
 #include <mbedtls/error.h>
 #include <mbedtls/sha1.h>
 
@@ -40,8 +42,10 @@ namespace TeslaBLE {
                 value = (10 + (c - 'A'));
             else if (c >= 'a' && c <= 'f')
                 value = (10 + (c - 'a'));
-            else
+            else {
+                free(data);
                 return NULL;
+            }
 
             data[(index / 2)] += value << (((index + 1) % 2) * 4);
             index++;
@@ -75,11 +79,8 @@ namespace TeslaBLE {
     }
 
     int Common::calculateIdentifier(unsigned char *vin, char *output) {
-        unsigned char parsed_vin[18];
-        strcpy((char *) parsed_vin, (char *) vin);
-
         unsigned char hashed_vin[20];
-        const int return_code = mbedtls_sha1(parsed_vin, 17, hashed_vin);
+        const int return_code = mbedtls_sha1(vin, 17, hashed_vin);
         if (return_code != 0) {
             Common::PrintErrorFromMbedTlsErrorCode(return_code);
             return 1;
@@ -87,7 +88,7 @@ namespace TeslaBLE {
 
         output[0] = 'S';
         for (int i = 0; i < 8; ++i) {
-            sprintf(&output[1 + i * 2], "%02x", hashed_vin[i]);
+            snprintf(&output[1 + i * 2], 3, "%02x", hashed_vin[i]);
         }
         output[17] = 'C';
         output[18] = '\0';
@@ -100,13 +101,35 @@ namespace TeslaBLE {
         return length;
     }
 
-    void Common::GenerateUUID(unsigned char *output_buffer, uint16_t *output_size) {
-        unsigned char uuid[16];
-        for (int i = 0; i < sizeof(uuid); i++) {
-            uuid[i] = rand() % 256;
+    int Common::RandomBytes(unsigned char *output_buffer, size_t output_size) {
+        if (output_buffer == nullptr || output_size == 0) {
+            return ResultCode::ERROR;
         }
-        memcpy(output_buffer, uuid, sizeof(uuid));
-        *output_size = sizeof(uuid);
+        mbedtls_entropy_context entropy;
+        mbedtls_ctr_drbg_context drbg;
+        mbedtls_entropy_init(&entropy);
+        mbedtls_ctr_drbg_init(&drbg);
+        int return_code = mbedtls_ctr_drbg_seed(&drbg, mbedtls_entropy_func, &entropy, nullptr, 0);
+        if (return_code != 0) {
+            mbedtls_ctr_drbg_free(&drbg);
+            mbedtls_entropy_free(&entropy);
+            return ResultCode::MBEDTLS_ERROR;
+        }
+        return_code = mbedtls_ctr_drbg_random(&drbg, output_buffer, output_size);
+        mbedtls_ctr_drbg_free(&drbg);
+        mbedtls_entropy_free(&entropy);
+        if (return_code != 0) {
+            return ResultCode::MBEDTLS_ERROR;
+        }
+        return ResultCode::SUCCESS;
+    }
+
+    void Common::GenerateUUID(unsigned char *output_buffer, uint16_t *output_size) {
+        if (Common::RandomBytes(output_buffer, 16) != ResultCode::SUCCESS) {
+            *output_size = 0;
+            return;
+        }
+        *output_size = 16;
     }
 
     int Common::DecodeRoutableMessage(unsigned char *buffer, size_t buffer_size,
@@ -131,19 +154,29 @@ namespace TeslaBLE {
         return ResultCode::SUCCESS;
     }
 
+    int Common::DecodeCarServerResponse(unsigned char *buffer, size_t buffer_size,
+                                        CarServer_Response *output_message) {
+        pb_istream_t input_stream = pb_istream_from_buffer(buffer, buffer_size);
+        if (!pb_decode(&input_stream, CarServer_Response_fields, output_message)) {
+            printf("Decoding failed: %s\n", PB_GET_ERROR(&input_stream));
+            return ResultCode::NANOPB_DECODE_ERROR;
+        }
+
+        return ResultCode::SUCCESS;
+    }
+
     int Common::EncodeRoutableMessage(UniversalMessage_RoutableMessage routable_message,
                                       unsigned char *output_buffer,
                                       size_t *output_size) {
-        Common::GenerateUUID(routable_message.uuid.bytes, &routable_message.uuid.size);
-
-        pb_ostream_t size_stream = {nullptr};
-        if (!pb_encode(&size_stream, UniversalMessage_RoutableMessage_fields, &routable_message)) {
-            printf("Failed to encode message: %s", PB_GET_ERROR(&size_stream));
-            return ResultCode::NANOPB_ENCODE_ERROR;
+        if (routable_message.uuid.size == 0) {
+            Common::GenerateUUID(routable_message.uuid.bytes, &routable_message.uuid.size);
+            if (routable_message.uuid.size == 0) {
+                return ResultCode::MBEDTLS_ERROR;
+            }
         }
 
-        uint8_t message_buffer[size_stream.bytes_written];
-        pb_ostream_t message_stream = pb_ostream_from_buffer(message_buffer, size_stream.bytes_written);
+        uint8_t message_buffer[UniversalMessage_RoutableMessage_size];
+        pb_ostream_t message_stream = pb_ostream_from_buffer(message_buffer, sizeof(message_buffer));
         if (!pb_encode(&message_stream, UniversalMessage_RoutableMessage_fields, &routable_message)) {
             printf("Failed to encode message: %s", PB_GET_ERROR(&message_stream));
             return ResultCode::NANOPB_ENCODE_ERROR;

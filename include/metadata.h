@@ -28,7 +28,8 @@ namespace TeslaBLE {
 
         int BuildMetadata(UniversalMessage_Domain destination, Signatures_SignatureType method,
                           unsigned char *vin,
-                          uint32_t expiresAt, uint32_t counter, unsigned char *epoch);
+                          uint32_t expiresAt, uint32_t counter, unsigned char *epoch,
+                          uint32_t flags = 0);
 
         void Checksum(unsigned char *output, unsigned char end_tag);
     };

@@ -29,7 +29,7 @@ option(TESLA_BLE_BUILD_TESTS "Build host unit tests" ${TESLA_BLE_BUILD_TESTS_DEF
 FetchContent_Declare(
         nanopb
         GIT_REPOSITORY https://github.com/nanopb/nanopb.git
-        GIT_TAG master
+        GIT_TAG 0.4.8
         GIT_SHALLOW TRUE
 )
 FetchContent_Declare(
@@ -53,6 +53,7 @@ set(COMMON_SOURCES
         src/shared.cpp
         src/carserver.cpp
         src/security.cpp
+        src/ble_frame.cpp
 )
 
 # NanoPB source files
@@ -68,6 +69,7 @@ set(PROTOBUF_SOURCES
         src/common.pb.c
         src/errors.pb.c
         src/keys.pb.c
+        src/managed_charging.pb.c
         src/signatures.pb.c
         src/universal_message.pb.c
         src/vcsec.pb.c
@@ -101,10 +103,12 @@ set(PUBLIC_HEADERS
         include/shared.h
         include/carserver.h
         include/security.h
+        include/ble_frame.h
         include/car_server.pb.h
         include/common.pb.h
         include/errors.pb.h
         include/keys.pb.h
+        include/managed_charging.pb.h
         include/signatures.pb.h
         include/universal_message.pb.h
         include/vcsec.pb.h

@@ -33,7 +33,9 @@ If the private key hasn't been whitelisted with the car, generate a whitelist me
 may require NFC card confirmation or display a UI prompt.
 
 ```c++
-authenticator.BuildKeyWhitelistMessage(Keys_Role_ROLE_OWNER, sessionInfoRequestBuffer,
+authenticator.BuildKeyWhitelistMessage(Keys_Role_ROLE_OWNER,
+                                      VCSEC_KeyFormFactor_KEY_FORM_FACTOR_ANDROID_DEVICE,
+                                      sessionInfoRequestBuffer,
                                       &sessionInfoRequestBufferLength);
 ```
 
@@ -77,7 +79,7 @@ session.BuildRequestSessionInfoMessage(UniversalMessage_Domain_DOMAIN_VEHICLE_SE
                                              securitySessionInfoRequestBuffer,
                                              &sessionInfoRequestBufferLength);
 
-session.UpdateSessionInfo(UniversalMessage_Domain_DOMAIN_INFOTAINMENT, session_info, 92);
+session.UpdateSessionInfo(UniversalMessage_Domain_DOMAIN_INFOTAINMENT, session_info, 92, tag, 32);
 ```
 
 This command exports the session data to the specified session_buffer and populates the session_size variable with the
@@ -110,22 +112,31 @@ session.BuildRoutableMessage(domain, action_message_buffer,
 The `BuildRoutableMessage` function processes the message by encrypting its content, computing a checksum for integrity,
 and prepending the message length. The resulting output is a transmission-ready message formatted for the vehicle.
 
+Decode infotainment replies with `Common::DecodeCarServerResponse`. Decode VCSEC status with `Common::DecodeFromVCSECMessage`. Request one `GetVehicleData` category at a time over BLE.
+
+### Implemented helpers
+
+`Security`: Lock, Unlock, Wake, AutoSecure, RemoteDrive, OpenTrunk, CloseTrunk, OpenFrunk, Open/Close/StopTonneau, GetStatus, GetWhitelistInfo, GetWhitelistEntryInfo, RemoveKey.
+
+`Authenticator::BuildKeyWhitelistMessage` takes `Keys_Role` (including `ROLE_GUEST`) and `VCSEC_KeyFormFactor`.
+
+`CarServer`: climate on/off, temp, seats, COP, bioweapon, climate keeper, charge start/stop/limit/amps/max/standard, charge port, schedules, nearby sites, honk, flash, windows, sunroof, sentry, valet, guest, ping, software update, homelink, vehicle name, media, volume, GetVehicleData (12 Tesla BLE categories), parental controls, PIN admin reset, low-power, keep accessory power.
+
+Not implemented on BLE: `SetPINToDrive` (Tesla requires Fleet API), HMAC-personalized (HTTPS), tesla-http-proxy.
+
+Protos are pinned to teslamotors/vehicle-command `f97fa1e` (`protobuf/TESLA_COMMIT`).
+
 ## Protocol Details
 
 For a deeper understanding of the protocol, please refer to the official
 documentation: [vehicle-command](https://github.com/teslamotors/vehicle-command/blob/main/pkg/protocol/protocol.md).
 
-## Expanding Functionality
-
-While not all `VehicleAction` commands are currently implemented, adding new functionality is straightforward. Simply
-incorporate additional commands into the `carserver.cpp` class, following the established pattern of existing commands.
-
 ## Protocol Buffers (Protobuf)
 
 **Updating Protobuf Files:**
 
-1. Download the latest Protobuf files from the Tesla vehicle-command project on GitHub.
-2. Navigate to the library's root directory and execute the `proto.sh` shell script.
+1. Copy Tesla protobufs from teslamotors/vehicle-command at the SHA in `protobuf/TESLA_COMMIT`.
+2. Navigate to the library's root directory and execute `PYTHON=... ./proto.sh` (needs nanopb 0.4.8 from the CMake build dir).
 
 **Important Considerations:**
 
@@ -208,7 +219,7 @@ This project is dual-licensed under:
 
    For the full text of the AGPL v3.0, see the [LICENSE](./LICENSE.md) file in this repository.
 
-2. **Commercial License**:  
+2. **Commercial License**:
    For organizations or individuals who wish to use this software in a proprietary product or without adhering to the
    terms of the AGPL, a commercial license is available.
 

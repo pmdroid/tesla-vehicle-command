@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <cstddef>
 
+#include <car_server.pb.h>
 #include <universal_message.pb.h>
 #include <vcsec.pb.h>
 
@@ -26,6 +27,7 @@ enum ResultCode : int {
     PRIVATE_KEY_NOT_LOADED = 40,
     SESSION_INFO_NOT_LOADED = 50,
     SESSION_INFO_KEY_NOT_WHITELISTED = 51,
+    SESSION_INFO_HMAC_INVALID = 52,
 };
 
 namespace TeslaBLE {
@@ -44,6 +46,8 @@ namespace TeslaBLE {
 
         static size_t ExtractLength(unsigned char *input_buffer);
 
+        static int RandomBytes(unsigned char *output_buffer, size_t output_size);
+
         static void GenerateUUID(unsigned char *output_buffer, uint16_t *output_size);
 
         static int DecodeRoutableMessage(unsigned char *buffer, size_t buffer_size,
@@ -51,6 +55,9 @@ namespace TeslaBLE {
 
         static int DecodeFromVCSECMessage(unsigned char *buffer, size_t buffer_size,
                                           VCSEC_FromVCSECMessage *output_message);
+
+        static int DecodeCarServerResponse(unsigned char *buffer, size_t buffer_size,
+                                           CarServer_Response *output_message);
 
         static int EncodeRoutableMessage(UniversalMessage_RoutableMessage routable_message,
                                          unsigned char *output_buffer,

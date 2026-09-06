@@ -1,0 +1,2 @@
+CarServer.ChargeSchedule.name max_size:32
+CarServer.PreconditionSchedule.name max_size:32

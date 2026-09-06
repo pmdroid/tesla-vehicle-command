@@ -13,8 +13,14 @@
 #include <mbedtls/ctr_drbg.h>
 #include <mbedtls/ecdh.h>
 #include <mbedtls/entropy.h>
+extern "C" {
+#include <mbedtls/constant_time.h>
+}
 #include <mbedtls/gcm.h>
+#include <mbedtls/md.h>
+#include <mbedtls/version.h>
 #include <mbedtls/pk.h>
+#include <mbedtls/platform_util.h>
 #include <mbedtls/sha1.h>
 
 #include <pb.h>
@@ -22,20 +28,42 @@
 
 #include <shared.h>
 #include <keys.pb.h>
+#include <signatures.pb.h>
 #include <vcsec.pb.h>
 
 namespace TeslaBLE {
-    void Authenticator::UpdateNonce() {
-        for (unsigned char &i: this->nonce_) {
-            i = rand() % 256;
-        }
+    int Authenticator::UpdateNonce() {
+        return Common::RandomBytes(this->nonce_, sizeof(this->nonce_));
     }
 
     void Authenticator::GetNonce(unsigned char *nonce) {
         memcpy(nonce, this->nonce_, 12);
     }
 
-    int Authenticator::BuildKeyWhitelistMessage(Keys_Role role, unsigned char *output_buffer,
+    int Authenticator::GetSharedSecret(UniversalMessage_Domain domain, unsigned char *output_buffer,
+                                       size_t output_size) {
+        if (output_buffer == nullptr || output_size < 16) {
+            return ResultCode::ERROR;
+        }
+        unsigned slot = static_cast<unsigned>(domain);
+        if (slot >= kDomainSlots || !this->has_shared_secret_[slot]) {
+            return ResultCode::SESSION_INFO_NOT_LOADED;
+        }
+        memcpy(output_buffer, this->shared_secrets_[slot], 16);
+        return ResultCode::SUCCESS;
+    }
+
+    void Authenticator::ClearSharedSecret(UniversalMessage_Domain domain) {
+        unsigned slot = static_cast<unsigned>(domain);
+        if (slot >= kDomainSlots || !this->has_shared_secret_[slot]) {
+            return;
+        }
+        mbedtls_platform_zeroize(this->shared_secrets_[slot], 16);
+        this->has_shared_secret_[slot] = false;
+    }
+
+    int Authenticator::BuildKeyWhitelistMessage(Keys_Role role, VCSEC_KeyFormFactor form_factor,
+                                                unsigned char *output_buffer,
                                                 size_t *output_size) {
         if (!this->private_key_loaded_) {
             return ResultCode::PRIVATE_KEY_NOT_LOADED;
@@ -48,7 +76,7 @@ namespace TeslaBLE {
         permission_change.has_key = true;
 
         VCSEC_WhitelistOperation whitelist_operation = VCSEC_WhitelistOperation_init_default;
-        whitelist_operation.metadataForKey.keyFormFactor = VCSEC_KeyFormFactor_KEY_FORM_FACTOR_CLOUD_KEY;
+        whitelist_operation.metadataForKey.keyFormFactor = form_factor;
         whitelist_operation.has_metadataForKey = true;
 
         whitelist_operation.which_sub_message = VCSEC_WhitelistOperation_addKeyToWhitelistAndAddPermissions_tag;
@@ -137,6 +165,9 @@ namespace TeslaBLE {
 
     int Authenticator::LoadPrivateKey(const uint8_t *private_key_buffer,
                                       size_t private_key_size) {
+        if (this->private_key_loaded_) {
+            this->Cleanup();
+        }
         mbedtls_entropy_context entropy_context;
         mbedtls_entropy_init(&entropy_context);
 
@@ -150,10 +181,16 @@ namespace TeslaBLE {
             return ResultCode::MBEDTLS_ERROR;
         }
 
-        unsigned char password[0];
+        unsigned char password[1] = {0};
+#if MBEDTLS_VERSION_MAJOR >= 3
         return_code = mbedtls_pk_parse_key(
             &this->private_key_context_, private_key_buffer, private_key_size,
             password, 0, mbedtls_ctr_drbg_random, &this->drbg_context_);
+#else
+        return_code = mbedtls_pk_parse_key(
+            &this->private_key_context_, private_key_buffer, private_key_size,
+            password, 0);
+#endif
 
         if (return_code != 0) {
             Common::PrintErrorFromMbedTlsErrorCode(return_code);
@@ -184,9 +221,15 @@ namespace TeslaBLE {
     }
 
     int Authenticator::GeneratePublicKey() {
+#if MBEDTLS_VERSION_MAJOR >= 3
         int return_code = mbedtls_ecp_point_write_binary(
             &mbedtls_pk_ec(this->private_key_context_)->private_grp,
             &mbedtls_pk_ec(this->private_key_context_)->private_Q,
+#else
+        int return_code = mbedtls_ecp_point_write_binary(
+            &mbedtls_pk_ec(this->private_key_context_)->grp,
+            &mbedtls_pk_ec(this->private_key_context_)->Q,
+#endif
             MBEDTLS_ECP_PF_UNCOMPRESSED, &this->public_key_size_, this->public_key_,
             sizeof(this->public_key_));
 
@@ -210,22 +253,32 @@ namespace TeslaBLE {
         unsigned char temp_shared_secret[32];
         size_t temp_shared_secret_length = 0;
 
+#if MBEDTLS_VERSION_MAJOR >= 3
         int return_code = mbedtls_ecp_group_load(&tesla_key.private_grp,
                                                  MBEDTLS_ECP_DP_SECP256R1);
+#else
+        int return_code = mbedtls_ecp_group_load(&tesla_key.grp, MBEDTLS_ECP_DP_SECP256R1);
+#endif
         if (return_code != 0) {
             Common::PrintErrorFromMbedTlsErrorCode(return_code);
             return ResultCode::MBEDTLS_ERROR;
         }
 
+#if MBEDTLS_VERSION_MAJOR >= 3
         return_code = mbedtls_ecp_point_read_binary(
             &tesla_key.private_grp, &tesla_key.private_Q,
             public_key_buffer, public_key_size);
+#else
+        return_code = mbedtls_ecp_point_read_binary(
+            &tesla_key.grp, &tesla_key.Q, public_key_buffer, public_key_size);
+#endif
 
         if (return_code != 0) {
             Common::PrintErrorFromMbedTlsErrorCode(return_code);
             return ResultCode::MBEDTLS_ERROR;
         }
 
+        mbedtls_ecdh_free(&this->ecdh_context_);
         mbedtls_ecdh_init(&this->ecdh_context_);
         return_code = mbedtls_ecdh_get_params(
             &this->ecdh_context_, mbedtls_pk_ec(this->private_key_context_),
@@ -257,9 +310,13 @@ namespace TeslaBLE {
         mbedtls_sha1_context sha1_context;
         mbedtls_sha1_init(&sha1_context);
 
+        unsigned char sha1_digest[20];
         return_code = mbedtls_sha1_starts(&sha1_context);
         if (return_code != 0) {
             Common::PrintErrorFromMbedTlsErrorCode(return_code);
+            mbedtls_platform_zeroize(temp_shared_secret, sizeof(temp_shared_secret));
+            mbedtls_sha1_free(&sha1_context);
+            mbedtls_ecp_keypair_free(&tesla_key);
             return ResultCode::MBEDTLS_ERROR;
         }
 
@@ -267,15 +324,34 @@ namespace TeslaBLE {
                                           temp_shared_secret_length);
         if (return_code != 0) {
             Common::PrintErrorFromMbedTlsErrorCode(return_code);
+            mbedtls_platform_zeroize(temp_shared_secret, sizeof(temp_shared_secret));
+            mbedtls_sha1_free(&sha1_context);
+            mbedtls_ecp_keypair_free(&tesla_key);
             return ResultCode::MBEDTLS_ERROR;
         }
 
-        return_code = mbedtls_sha1_finish(&sha1_context, this->shared_secrets_[domain]);
+        return_code = mbedtls_sha1_finish(&sha1_context, sha1_digest);
         if (return_code != 0) {
             Common::PrintErrorFromMbedTlsErrorCode(return_code);
+            mbedtls_platform_zeroize(temp_shared_secret, sizeof(temp_shared_secret));
+            mbedtls_platform_zeroize(sha1_digest, sizeof(sha1_digest));
+            mbedtls_sha1_free(&sha1_context);
+            mbedtls_ecp_keypair_free(&tesla_key);
             return ResultCode::MBEDTLS_ERROR;
         }
 
+        unsigned slot = static_cast<unsigned>(domain);
+        if (slot >= kDomainSlots) {
+            mbedtls_platform_zeroize(temp_shared_secret, sizeof(temp_shared_secret));
+            mbedtls_platform_zeroize(sha1_digest, sizeof(sha1_digest));
+            mbedtls_sha1_free(&sha1_context);
+            mbedtls_ecp_keypair_free(&tesla_key);
+            return ResultCode::ERROR;
+        }
+        memcpy(this->shared_secrets_[slot], sha1_digest, 16);
+        this->has_shared_secret_[slot] = true;
+        mbedtls_platform_zeroize(temp_shared_secret, sizeof(temp_shared_secret));
+        mbedtls_platform_zeroize(sha1_digest, sizeof(sha1_digest));
         mbedtls_sha1_free(&sha1_context);
         mbedtls_ecp_keypair_free(&tesla_key);
         return ResultCode::SUCCESS;
@@ -285,29 +361,57 @@ namespace TeslaBLE {
                                size_t input_buffer_size, unsigned char *checksum,
                                unsigned char *output_buffer, size_t output_buffer_size,
                                size_t *output_size, unsigned char *tag_buffer) {
+        int nonce_rc = this->UpdateNonce();
+        if (nonce_rc != ResultCode::SUCCESS) {
+            return nonce_rc;
+        }
+        return this->EncryptWithNonce(domain, input_buffer, input_buffer_size, checksum,
+                                      this->nonce_, sizeof(this->nonce_), output_buffer,
+                                      output_buffer_size, output_size, tag_buffer);
+    }
+
+    int Authenticator::EncryptWithNonce(UniversalMessage_Domain domain, unsigned char *input_buffer,
+                                        size_t input_buffer_size, unsigned char *checksum,
+                                        unsigned char *nonce, size_t nonce_size,
+                                        unsigned char *output_buffer, size_t output_buffer_size,
+                                        size_t *output_size, unsigned char *tag_buffer) {
         mbedtls_gcm_context aes_context;
         mbedtls_gcm_init(&aes_context);
 
-        this->UpdateNonce();
+        if (nonce == nullptr || nonce_size != 12) {
+            mbedtls_gcm_free(&aes_context);
+            return ResultCode::ERROR;
+        }
+        memcpy(this->nonce_, nonce, 12);
+
+        unsigned slot = static_cast<unsigned>(domain);
+        if (slot >= kDomainSlots || !this->has_shared_secret_[slot]) {
+            mbedtls_gcm_free(&aes_context);
+            return ResultCode::SESSION_INFO_NOT_LOADED;
+        }
         int return_code = mbedtls_gcm_setkey(&aes_context, MBEDTLS_CIPHER_ID_AES,
-                                             this->shared_secrets_[domain],
+                                             this->shared_secrets_[slot],
                                              128);
 
         if (return_code != 0) {
             Common::PrintErrorFromMbedTlsErrorCode(return_code);
+            mbedtls_gcm_free(&aes_context);
             return ResultCode::MBEDTLS_ERROR;
         }
 
+#if MBEDTLS_VERSION_MAJOR >= 3
         return_code = mbedtls_gcm_starts(&aes_context, MBEDTLS_GCM_ENCRYPT, this->nonce_,
                                          12);
         if (return_code != 0) {
             Common::PrintErrorFromMbedTlsErrorCode(return_code);
+            mbedtls_gcm_free(&aes_context);
             return ResultCode::MBEDTLS_ERROR;
         }
 
         return_code = mbedtls_gcm_update_ad(&aes_context, checksum, 32);
         if (return_code != 0) {
             Common::PrintErrorFromMbedTlsErrorCode(return_code);
+            mbedtls_gcm_free(&aes_context);
             return ResultCode::MBEDTLS_ERROR;
         }
 
@@ -317,6 +421,7 @@ namespace TeslaBLE {
 
         if (return_code != 0) {
             Common::PrintErrorFromMbedTlsErrorCode(return_code);
+            mbedtls_gcm_free(&aes_context);
             return ResultCode::MBEDTLS_ERROR;
         }
 
@@ -329,15 +434,190 @@ namespace TeslaBLE {
 
         if (return_code != 0) {
             Common::PrintErrorFromMbedTlsErrorCode(return_code);
+            mbedtls_gcm_free(&aes_context);
             return ResultCode::MBEDTLS_ERROR;
         }
 
         if (finish_buffer_length > 0) {
             memcpy(output_buffer + *output_size, finish_buffer, finish_buffer_length);
-            *output_size = output_buffer_size + finish_buffer_length;
+            *output_size += finish_buffer_length;
         }
+#else
+        return_code = mbedtls_gcm_starts(&aes_context, MBEDTLS_GCM_ENCRYPT, this->nonce_, 12,
+                                         checksum, 32);
+        if (return_code != 0) {
+            mbedtls_gcm_free(&aes_context);
+            return ResultCode::MBEDTLS_ERROR;
+        }
+        mbedtls_gcm_update(&aes_context, input_buffer_size, input_buffer, output_buffer);
+        mbedtls_gcm_finish(&aes_context, tag_buffer, 16);
+        *output_size = input_buffer_size;
+#endif
 
         mbedtls_gcm_free(&aes_context);
+        return ResultCode::SUCCESS;
+    }
+
+    int Authenticator::Decrypt(UniversalMessage_Domain domain, unsigned char *nonce, size_t nonce_size,
+                               unsigned char *input_buffer, size_t input_buffer_size,
+                               unsigned char *checksum, unsigned char *tag, size_t tag_size,
+                               unsigned char *output_buffer, size_t output_buffer_size,
+                               size_t *output_size) {
+        if (nonce == nullptr || nonce_size != 12 || tag == nullptr || tag_size != 16) {
+            return ResultCode::ERROR;
+        }
+        mbedtls_gcm_context aes_context;
+        mbedtls_gcm_init(&aes_context);
+        unsigned slot = static_cast<unsigned>(domain);
+        if (slot >= kDomainSlots || !this->has_shared_secret_[slot]) {
+            mbedtls_gcm_free(&aes_context);
+            return ResultCode::SESSION_INFO_NOT_LOADED;
+        }
+        int return_code = mbedtls_gcm_setkey(&aes_context, MBEDTLS_CIPHER_ID_AES,
+                                             this->shared_secrets_[slot], 128);
+        if (return_code != 0) {
+            mbedtls_gcm_free(&aes_context);
+            return ResultCode::MBEDTLS_ERROR;
+        }
+#if MBEDTLS_VERSION_MAJOR >= 3
+        return_code = mbedtls_gcm_starts(&aes_context, MBEDTLS_GCM_DECRYPT, nonce, 12);
+        if (return_code != 0) {
+            mbedtls_gcm_free(&aes_context);
+            return ResultCode::MBEDTLS_ERROR;
+        }
+        return_code = mbedtls_gcm_update_ad(&aes_context, checksum, 32);
+        if (return_code != 0) {
+            mbedtls_gcm_free(&aes_context);
+            return ResultCode::MBEDTLS_ERROR;
+        }
+        return_code = mbedtls_gcm_update(&aes_context, input_buffer, input_buffer_size,
+                                         output_buffer, output_buffer_size, output_size);
+        if (return_code != 0) {
+            mbedtls_gcm_free(&aes_context);
+            return ResultCode::MBEDTLS_ERROR;
+        }
+        size_t finish_buffer_length = 0;
+        unsigned char finish_buffer[15];
+        return_code = mbedtls_gcm_finish(&aes_context, finish_buffer, sizeof(finish_buffer),
+                                         &finish_buffer_length, tag, 16);
+        mbedtls_gcm_free(&aes_context);
+        if (return_code != 0) {
+            return ResultCode::MBEDTLS_ERROR;
+        }
+        if (finish_buffer_length > 0) {
+            memcpy(output_buffer + *output_size, finish_buffer, finish_buffer_length);
+            *output_size += finish_buffer_length;
+        }
+#else
+        return_code = mbedtls_gcm_starts(&aes_context, MBEDTLS_GCM_DECRYPT, nonce, 12, checksum, 32);
+        if (return_code != 0) {
+            mbedtls_gcm_free(&aes_context);
+            return ResultCode::MBEDTLS_ERROR;
+        }
+        mbedtls_gcm_update(&aes_context, input_buffer_size, input_buffer, output_buffer);
+        return_code = mbedtls_gcm_finish(&aes_context, tag, 16);
+        mbedtls_gcm_free(&aes_context);
+        if (return_code != 0) {
+            return ResultCode::MBEDTLS_ERROR;
+        }
+        *output_size = input_buffer_size;
+#endif
+        return ResultCode::SUCCESS;
+    }
+
+    int Authenticator::VerifySessionInfoTag(UniversalMessage_Domain domain, unsigned char *vin,
+                                            unsigned char *challenge, size_t challenge_size,
+                                            unsigned char *session_info, size_t session_info_size,
+                                            unsigned char *tag, size_t tag_size) {
+        if (vin == nullptr || challenge == nullptr || session_info == nullptr || tag == nullptr) {
+            return ResultCode::ERROR;
+        }
+        if (challenge_size == 0 || challenge_size > 255 || session_info_size == 0 || tag_size != 32) {
+            return ResultCode::SESSION_INFO_HMAC_INVALID;
+        }
+
+        unsigned char shared_key[16];
+        int result = this->GetSharedSecret(domain, shared_key, sizeof(shared_key));
+        if (result != ResultCode::SUCCESS) {
+            return result;
+        }
+
+        const mbedtls_md_info_t *md_info = mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
+        if (md_info == nullptr) {
+            mbedtls_platform_zeroize(shared_key, sizeof(shared_key));
+            return ResultCode::MBEDTLS_ERROR;
+        }
+
+        unsigned char session_info_key[32];
+        const unsigned char label[] = "session info";
+        int return_code = mbedtls_md_hmac(md_info, shared_key, sizeof(shared_key), label,
+                                          sizeof(label) - 1, session_info_key);
+        mbedtls_platform_zeroize(shared_key, sizeof(shared_key));
+        if (return_code != 0) {
+            mbedtls_platform_zeroize(session_info_key, sizeof(session_info_key));
+            return ResultCode::MBEDTLS_ERROR;
+        }
+
+        mbedtls_md_context_t hmac;
+        mbedtls_md_init(&hmac);
+        return_code = mbedtls_md_setup(&hmac, md_info, 1);
+        if (return_code != 0) {
+            mbedtls_md_free(&hmac);
+            mbedtls_platform_zeroize(session_info_key, sizeof(session_info_key));
+            return ResultCode::MBEDTLS_ERROR;
+        }
+        return_code = mbedtls_md_hmac_starts(&hmac, session_info_key, sizeof(session_info_key));
+        mbedtls_platform_zeroize(session_info_key, sizeof(session_info_key));
+        if (return_code != 0) {
+            mbedtls_md_free(&hmac);
+            return ResultCode::MBEDTLS_ERROR;
+        }
+
+        unsigned char signature_type[3] = {Signatures_Tag_TAG_SIGNATURE_TYPE, 1,
+                                           Signatures_SignatureType_SIGNATURE_TYPE_HMAC};
+        unsigned char personalization_header[2] = {Signatures_Tag_TAG_PERSONALIZATION, 17};
+        unsigned char challenge_header[2] = {Signatures_Tag_TAG_CHALLENGE,
+                                             static_cast<unsigned char>(challenge_size)};
+        unsigned char end_tag = Signatures_Tag_TAG_END;
+
+        return_code = mbedtls_md_hmac_update(&hmac, signature_type, sizeof(signature_type));
+        if (return_code == 0) {
+            return_code = mbedtls_md_hmac_update(&hmac, personalization_header,
+                                                 sizeof(personalization_header));
+        }
+        if (return_code == 0) {
+            return_code = mbedtls_md_hmac_update(&hmac, vin, 17);
+        }
+        if (return_code == 0) {
+            return_code = mbedtls_md_hmac_update(&hmac, challenge_header, sizeof(challenge_header));
+        }
+        if (return_code == 0) {
+            return_code = mbedtls_md_hmac_update(&hmac, challenge, challenge_size);
+        }
+        if (return_code == 0) {
+            return_code = mbedtls_md_hmac_update(&hmac, &end_tag, 1);
+        }
+        if (return_code == 0) {
+            return_code = mbedtls_md_hmac_update(&hmac, session_info, session_info_size);
+        }
+        if (return_code != 0) {
+            mbedtls_md_free(&hmac);
+            return ResultCode::MBEDTLS_ERROR;
+        }
+
+        unsigned char computed[32];
+        return_code = mbedtls_md_hmac_finish(&hmac, computed);
+        mbedtls_md_free(&hmac);
+        if (return_code != 0) {
+            mbedtls_platform_zeroize(computed, sizeof(computed));
+            return ResultCode::MBEDTLS_ERROR;
+        }
+
+        int mismatch = mbedtls_ct_memcmp(computed, tag, 32);
+        mbedtls_platform_zeroize(computed, sizeof(computed));
+        if (mismatch != 0) {
+            return ResultCode::SESSION_INFO_HMAC_INVALID;
+        }
         return ResultCode::SUCCESS;
     }
 
@@ -345,5 +625,13 @@ namespace TeslaBLE {
         mbedtls_pk_free(&this->private_key_context_);
         mbedtls_ecdh_free(&this->ecdh_context_);
         mbedtls_ctr_drbg_free(&this->drbg_context_);
+        mbedtls_pk_init(&this->private_key_context_);
+        mbedtls_ecdh_init(&this->ecdh_context_);
+        mbedtls_ctr_drbg_init(&this->drbg_context_);
+        for (unsigned i = 0; i < kDomainSlots; i++) {
+            mbedtls_platform_zeroize(this->shared_secrets_[i], 16);
+            this->has_shared_secret_[i] = false;
+        }
+        this->private_key_loaded_ = false;
     }
 } // namespace TeslaBLE

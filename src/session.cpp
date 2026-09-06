@@ -8,7 +8,10 @@
 #include <chrono>
 #include <cstdlib>
 
+#include <ctime>
+
 #include <car_server.pb.h>
+#include <signatures.pb.h>
 #include <universal_message.pb.h>
 
 #include <pb.h>
@@ -22,10 +25,8 @@ namespace TeslaBLE {
         this->authenticator_ = authenticator;
     }
 
-    void Session::GenerateRoutingAddress() {
-        for (int i = 0; i < sizeof(this->routing_address_); i++) {
-            this->routing_address_[i] = rand() % 256;
-        }
+    int Session::GenerateRoutingAddress() {
+        return Common::RandomBytes(this->routing_address_, sizeof(this->routing_address_));
     }
 
     void Session::SetRoutingAddress(unsigned char *routing_address) {
@@ -73,13 +74,56 @@ namespace TeslaBLE {
         return ResultCode::SUCCESS;
     }
 
-    int Session::UpdateSessionInfo(UniversalMessage_Domain domain, unsigned char *session_info_message,
-                                   size_t session_info_length) {
-        Signatures_SessionInfo session_info = Signatures_SessionInfo_init_zero;
-
-        if (session_info.status == Signatures_Session_Info_Status_SESSION_INFO_STATUS_KEY_NOT_ON_WHITELIST) {
-            return ResultCode::SESSION_INFO_KEY_NOT_WHITELISTED;
+    int Session::ImportSessionInfo(UniversalMessage_Domain domain, unsigned char *input_buffer,
+                                   size_t input_size) {
+        if (this->authenticator_ == nullptr) {
+            return ResultCode::PRIVATE_KEY_NOT_LOADED;
         }
+        unsigned slot = static_cast<unsigned>(domain);
+        if (slot >= kDomainSlots) {
+            return ResultCode::ERROR;
+        }
+        Signatures_SessionInfo session_info = Signatures_SessionInfo_init_zero;
+        pb_istream_t stream = pb_istream_from_buffer(input_buffer, input_size);
+        if (!pb_decode(&stream, Signatures_SessionInfo_fields, &session_info)) {
+            return ResultCode::NANOPB_DECODE_ERROR;
+        }
+        int result = this->authenticator_->LoadTeslaPublicKey(domain, session_info.publicKey.bytes,
+                                                              session_info.publicKey.size);
+        if (result != ResultCode::SUCCESS) {
+            return result;
+        }
+        uint32_t now = std::time(nullptr);
+        this->clock_times_[slot] = session_info.clock_time;
+        this->time_zeros_[slot] = now - session_info.clock_time;
+        this->counters_[slot] = session_info.counter;
+        memcpy(this->epochs_[slot], session_info.epoch, 16);
+        size_t key_size = session_info.publicKey.size;
+        if (key_size > sizeof(this->car_keys[slot])) {
+            key_size = sizeof(this->car_keys[slot]);
+        }
+        memcpy(this->car_keys[slot], session_info.publicKey.bytes, key_size);
+        this->car_key_sizes[slot] = session_info.publicKey.size;
+        this->has_valid_session_info_[slot] = true;
+        return ResultCode::SUCCESS;
+    }
+
+    void Session::SetRequestUuid(UniversalMessage_Domain domain, unsigned char *uuid, size_t uuid_size) {
+        size_t copy = uuid_size;
+        if (copy > 16) {
+            copy = 16;
+        }
+        unsigned slot = static_cast<unsigned>(domain);
+        if (slot >= kDomainSlots) {
+            return;
+        }
+        memcpy(this->request_uuids_[slot], uuid, copy);
+        this->request_uuid_sizes_[slot] = copy;
+    }
+
+    int Session::UpdateSessionInfo(UniversalMessage_Domain domain, unsigned char *session_info_message,
+                                   size_t session_info_length, unsigned char *tag, size_t tag_length) {
+        Signatures_SessionInfo session_info = Signatures_SessionInfo_init_zero;
 
         pb_istream_t stream = pb_istream_from_buffer(session_info_message, session_info_length);
         if (!pb_decode(&stream, Signatures_SessionInfo_fields, &session_info)) {
@@ -87,25 +131,63 @@ namespace TeslaBLE {
             return ResultCode::NANOPB_DECODE_ERROR;
         }
 
+        unsigned slot = static_cast<unsigned>(domain);
+        if (slot >= kDomainSlots) {
+            return ResultCode::ERROR;
+        }
+
+        if (session_info.status == Signatures_Session_Info_Status_SESSION_INFO_STATUS_KEY_NOT_ON_WHITELIST) {
+            this->has_valid_session_info_[slot] = false;
+            return ResultCode::SESSION_INFO_KEY_NOT_WHITELISTED;
+        }
+
+        if (this->authenticator_ == nullptr) {
+            return ResultCode::PRIVATE_KEY_NOT_LOADED;
+        }
+
+        int result = this->authenticator_->LoadTeslaPublicKey(domain, session_info.publicKey.bytes,
+                                                              session_info.publicKey.size);
+        if (result != ResultCode::SUCCESS) {
+            this->has_valid_session_info_[slot] = false;
+            return result;
+        }
+
+        if (this->request_uuid_sizes_[slot] == 0) {
+            this->authenticator_->ClearSharedSecret(domain);
+            this->has_valid_session_info_[slot] = false;
+            return ResultCode::SESSION_INFO_HMAC_INVALID;
+        }
+        result = this->authenticator_->VerifySessionInfoTag(
+            domain, this->vin_, this->request_uuids_[slot], this->request_uuid_sizes_[slot],
+            session_info_message, session_info_length, tag, tag_length);
+        if (result != ResultCode::SUCCESS) {
+            this->authenticator_->ClearSharedSecret(domain);
+            this->has_valid_session_info_[slot] = false;
+            return result;
+        }
+
         uint32_t now = std::time(nullptr);
-        this->clock_times_[domain] = session_info.clock_time;
-        this->time_zeros_[domain] = now - session_info.clock_time;
-        this->counters_[domain] = session_info.counter;
-        memcpy(this->epochs_[domain], session_info.epoch, 16);
+        this->clock_times_[slot] = session_info.clock_time;
+        this->time_zeros_[slot] = now - session_info.clock_time;
+        this->counters_[slot] = session_info.counter;
+        memcpy(this->epochs_[slot], session_info.epoch, 16);
 
-        // saved for export and import of the session information
-        memcpy(this->car_keys[domain], session_info.publicKey.bytes, 65);
-        this->car_key_sizes[domain] = session_info.publicKey.size;
+        size_t key_size = session_info.publicKey.size;
+        if (key_size > sizeof(this->car_keys[slot])) {
+            key_size = sizeof(this->car_keys[slot]);
+        }
+        memcpy(this->car_keys[slot], session_info.publicKey.bytes, key_size);
+        this->car_key_sizes[slot] = session_info.publicKey.size;
 
-        this->has_valid_session_info = true;
-        return this->authenticator_->LoadTeslaPublicKey(domain, session_info.publicKey.bytes,
-                                                        session_info.publicKey.size);
+        this->has_valid_session_info_[slot] = true;
+        return ResultCode::SUCCESS;
     }
 
     int Session::BuildRoutableMessage(UniversalMessage_Domain domain, unsigned char *action_message_buffer,
                                       size_t action_message_buffer_size, unsigned char *output_buffer,
                                       size_t *output_buffer_size) {
-        if (!this->has_valid_session_info) {
+        unsigned slot = static_cast<unsigned>(domain);
+        if (slot >= kDomainSlots || !this->has_valid_session_info_[slot]) {
             return ResultCode::SESSION_INFO_NOT_LOADED;
         }
 
@@ -129,11 +211,13 @@ namespace TeslaBLE {
 
         uint32_t counter = this->Counter(domain);
         uint32_t expiresAt = this->ExpiresAt(domain, 10);
+        uint32_t flags = 1u << UniversalMessage_Flags_FLAG_ENCRYPT_RESPONSE;
+        routable_message.flags = flags;
 
         this->meta_data_.Start();
         int result_code = this->meta_data_.BuildMetadata(
             domain, Signatures_SignatureType_SIGNATURE_TYPE_AES_GCM_PERSONALIZED, this->vin_,
-            expiresAt, counter, this->epochs_[domain]);
+            expiresAt, counter, this->epochs_[domain], flags);
         if (result_code != ResultCode::SUCCESS) {
             return result_code;
         }
@@ -215,6 +299,9 @@ namespace TeslaBLE {
 
         routable_message.payload.session_info_request = session_info_request;
         routable_message.which_payload = UniversalMessage_RoutableMessage_session_info_request_tag;
+
+        Common::GenerateUUID(routable_message.uuid.bytes, &routable_message.uuid.size);
+        this->SetRequestUuid(domain, routable_message.uuid.bytes, routable_message.uuid.size);
 
         return Common::EncodeRoutableMessage(routable_message, output_buffer, output_length);
     }
