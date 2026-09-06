@@ -9,6 +9,9 @@ project(TeslaBLE
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 cmake_policy(SET CMP0077 NEW)
+if (POLICY CMP0169)
+    cmake_policy(SET CMP0169 OLD)
+endif ()
 set(MBEDTLS_AS_SUBPROJECT ON)
 set(ENABLE_PROGRAMS OFF CACHE BOOL "" FORCE)
 set(ENABLE_TESTING OFF CACHE BOOL "" FORCE)
@@ -36,7 +39,11 @@ FetchContent_Declare(
         GIT_SHALLOW TRUE
 )
 
-FetchContent_MakeAvailable(nanopb mbedtls)
+FetchContent_MakeAvailable(mbedtls)
+FetchContent_GetProperties(nanopb)
+if (NOT nanopb_POPULATED)
+    FetchContent_Populate(nanopb)
+endif ()
 
 # Common source files
 set(COMMON_SOURCES
