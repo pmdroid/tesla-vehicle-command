@@ -11,6 +11,7 @@
 
 #include <shared.h>
 #include <keys.pb.h>
+#include <vcsec.pb.h>
 
 #include "pb.h"
 #include "mbedtls/ctr_drbg.h"
@@ -42,7 +43,8 @@ namespace TeslaBLE {
     Authenticator(const Authenticator &) = delete;
     Authenticator &operator=(const Authenticator &) = delete;
 
-    int BuildKeyWhitelistMessage(Keys_Role role, unsigned char *output_buffer, size_t *output_size);
+    int BuildKeyWhitelistMessage(Keys_Role role, VCSEC_KeyFormFactor form_factor,
+                                 unsigned char *output_buffer, size_t *output_size);
 
     int CreatePrivateKey();
 

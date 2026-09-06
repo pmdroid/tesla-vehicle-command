@@ -33,7 +33,9 @@ If the private key hasn't been whitelisted with the car, generate a whitelist me
 may require NFC card confirmation or display a UI prompt.
 
 ```c++
-authenticator.BuildKeyWhitelistMessage(Keys_Role_ROLE_OWNER, sessionInfoRequestBuffer,
+authenticator.BuildKeyWhitelistMessage(Keys_Role_ROLE_OWNER,
+                                      VCSEC_KeyFormFactor_KEY_FORM_FACTOR_ANDROID_DEVICE,
+                                      sessionInfoRequestBuffer,
                                       &sessionInfoRequestBufferLength);
 ```
 
@@ -208,7 +210,7 @@ This project is dual-licensed under:
 
    For the full text of the AGPL v3.0, see the [LICENSE](./LICENSE.md) file in this repository.
 
-2. **Commercial License**:  
+2. **Commercial License**:
    For organizations or individuals who wish to use this software in a proprietary product or without adhering to the
    terms of the AGPL, a commercial license is available.
 

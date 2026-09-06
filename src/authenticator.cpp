@@ -18,6 +18,7 @@ extern "C" {
 }
 #include <mbedtls/gcm.h>
 #include <mbedtls/md.h>
+#include <mbedtls/version.h>
 #include <mbedtls/pk.h>
 #include <mbedtls/platform_util.h>
 #include <mbedtls/sha1.h>
@@ -61,7 +62,8 @@ namespace TeslaBLE {
         this->has_shared_secret_[slot] = false;
     }
 
-    int Authenticator::BuildKeyWhitelistMessage(Keys_Role role, unsigned char *output_buffer,
+    int Authenticator::BuildKeyWhitelistMessage(Keys_Role role, VCSEC_KeyFormFactor form_factor,
+                                                unsigned char *output_buffer,
                                                 size_t *output_size) {
         if (!this->private_key_loaded_) {
             return ResultCode::PRIVATE_KEY_NOT_LOADED;
@@ -74,7 +76,7 @@ namespace TeslaBLE {
         permission_change.has_key = true;
 
         VCSEC_WhitelistOperation whitelist_operation = VCSEC_WhitelistOperation_init_default;
-        whitelist_operation.metadataForKey.keyFormFactor = VCSEC_KeyFormFactor_KEY_FORM_FACTOR_CLOUD_KEY;
+        whitelist_operation.metadataForKey.keyFormFactor = form_factor;
         whitelist_operation.has_metadataForKey = true;
 
         whitelist_operation.which_sub_message = VCSEC_WhitelistOperation_addKeyToWhitelistAndAddPermissions_tag;
@@ -179,10 +181,16 @@ namespace TeslaBLE {
             return ResultCode::MBEDTLS_ERROR;
         }
 
-        unsigned char password[0];
+        unsigned char password[1] = {0};
+#if MBEDTLS_VERSION_MAJOR >= 3
         return_code = mbedtls_pk_parse_key(
             &this->private_key_context_, private_key_buffer, private_key_size,
             password, 0, mbedtls_ctr_drbg_random, &this->drbg_context_);
+#else
+        return_code = mbedtls_pk_parse_key(
+            &this->private_key_context_, private_key_buffer, private_key_size,
+            password, 0);
+#endif
 
         if (return_code != 0) {
             Common::PrintErrorFromMbedTlsErrorCode(return_code);
@@ -213,9 +221,15 @@ namespace TeslaBLE {
     }
 
     int Authenticator::GeneratePublicKey() {
+#if MBEDTLS_VERSION_MAJOR >= 3
         int return_code = mbedtls_ecp_point_write_binary(
             &mbedtls_pk_ec(this->private_key_context_)->private_grp,
             &mbedtls_pk_ec(this->private_key_context_)->private_Q,
+#else
+        int return_code = mbedtls_ecp_point_write_binary(
+            &mbedtls_pk_ec(this->private_key_context_)->grp,
+            &mbedtls_pk_ec(this->private_key_context_)->Q,
+#endif
             MBEDTLS_ECP_PF_UNCOMPRESSED, &this->public_key_size_, this->public_key_,
             sizeof(this->public_key_));
 
@@ -239,16 +253,25 @@ namespace TeslaBLE {
         unsigned char temp_shared_secret[32];
         size_t temp_shared_secret_length = 0;
 
+#if MBEDTLS_VERSION_MAJOR >= 3
         int return_code = mbedtls_ecp_group_load(&tesla_key.private_grp,
                                                  MBEDTLS_ECP_DP_SECP256R1);
+#else
+        int return_code = mbedtls_ecp_group_load(&tesla_key.grp, MBEDTLS_ECP_DP_SECP256R1);
+#endif
         if (return_code != 0) {
             Common::PrintErrorFromMbedTlsErrorCode(return_code);
             return ResultCode::MBEDTLS_ERROR;
         }
 
+#if MBEDTLS_VERSION_MAJOR >= 3
         return_code = mbedtls_ecp_point_read_binary(
             &tesla_key.private_grp, &tesla_key.private_Q,
             public_key_buffer, public_key_size);
+#else
+        return_code = mbedtls_ecp_point_read_binary(
+            &tesla_key.grp, &tesla_key.Q, public_key_buffer, public_key_size);
+#endif
 
         if (return_code != 0) {
             Common::PrintErrorFromMbedTlsErrorCode(return_code);
@@ -376,6 +399,7 @@ namespace TeslaBLE {
             return ResultCode::MBEDTLS_ERROR;
         }
 
+#if MBEDTLS_VERSION_MAJOR >= 3
         return_code = mbedtls_gcm_starts(&aes_context, MBEDTLS_GCM_ENCRYPT, this->nonce_,
                                          12);
         if (return_code != 0) {
@@ -418,6 +442,17 @@ namespace TeslaBLE {
             memcpy(output_buffer + *output_size, finish_buffer, finish_buffer_length);
             *output_size += finish_buffer_length;
         }
+#else
+        return_code = mbedtls_gcm_starts(&aes_context, MBEDTLS_GCM_ENCRYPT, this->nonce_, 12,
+                                         checksum, 32);
+        if (return_code != 0) {
+            mbedtls_gcm_free(&aes_context);
+            return ResultCode::MBEDTLS_ERROR;
+        }
+        mbedtls_gcm_update(&aes_context, input_buffer_size, input_buffer, output_buffer);
+        mbedtls_gcm_finish(&aes_context, tag_buffer, 16);
+        *output_size = input_buffer_size;
+#endif
 
         mbedtls_gcm_free(&aes_context);
         return ResultCode::SUCCESS;
