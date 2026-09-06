@@ -513,3 +513,80 @@ TEST_CASE("AutoSeatClimate encodes front left on") {
     REQUIRE(seats.carseat[0].seat_position ==
             CarServer_AutoSeatClimateAction_AutoSeatPosition_E_AutoSeatPosition_FrontLeft);
 }
+
+TEST_CASE("SetChargingAmps encodes amps") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::SetChargingAmps(32, buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE(action.action_msg.vehicleAction.vehicle_action_msg.setChargingAmpsAction.charging_amps == 32);
+}
+
+TEST_CASE("ChargeMaxRange encodes start_max_range") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::ChargeMaxRange(buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE(action.action_msg.vehicleAction.vehicle_action_msg.chargingStartStopAction.which_charging_action ==
+            CarServer_ChargingStartStopAction_start_max_range_tag);
+}
+
+TEST_CASE("ChargeStandardRange encodes start_standard") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::ChargeStandardRange(buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE(action.action_msg.vehicleAction.vehicle_action_msg.chargingStartStopAction.which_charging_action ==
+            CarServer_ChargingStartStopAction_start_standard_tag);
+}
+
+TEST_CASE("ScheduleCharging encodes minutes from midnight") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::ScheduleCharging(true, 120, buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE(action.action_msg.vehicleAction.vehicle_action_msg.scheduledChargingAction.enabled);
+    REQUIRE(action.action_msg.vehicleAction.vehicle_action_msg.scheduledChargingAction.charging_time == 120);
+}
+
+TEST_CASE("ScheduleDeparture encodes all-week preconditioning") {
+    unsigned char buffer[64];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::ScheduleDeparture(480, 360, TeslaBLE::ChargingPolicyAllDays,
+                                                   TeslaBLE::ChargingPolicyWeekdays, buffer, &size) ==
+            ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    const auto &dep = action.action_msg.vehicleAction.vehicle_action_msg.scheduledDepartureAction;
+    REQUIRE(dep.enabled);
+    REQUIRE(dep.departure_time == 480);
+    REQUIRE(dep.has_preconditioning_times);
+    REQUIRE(dep.preconditioning_times.which_times == CarServer_PreconditioningTimes_all_week_tag);
+    REQUIRE(dep.has_off_peak_charging_times);
+    REQUIRE(dep.off_peak_charging_times.which_times == CarServer_OffPeakChargingTimes_weekdays_tag);
+}
+
+TEST_CASE("ScheduleDeparture rejects an invalid departure time") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::ScheduleDeparture(24 * 60 + 1, 0, TeslaBLE::ChargingPolicyOff,
+                                                   TeslaBLE::ChargingPolicyOff, buffer, &size) == ResultCode::ERROR);
+}
+
+TEST_CASE("ClearScheduledDeparture encodes enabled false") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::ClearScheduledDeparture(buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE_FALSE(action.action_msg.vehicleAction.vehicle_action_msg.scheduledDepartureAction.enabled);
+}
+
+TEST_CASE("GetNearbyCharging encodes Tesla BLE defaults") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::GetNearbyCharging(buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    const auto &sites = action.action_msg.vehicleAction.vehicle_action_msg.getNearbyChargingSites;
+    REQUIRE(sites.include_meta_data);
+    REQUIRE(sites.radius == 200);
+    REQUIRE(sites.count == 10);
+}

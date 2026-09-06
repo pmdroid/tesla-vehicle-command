@@ -15,6 +15,12 @@ namespace TeslaBLE {
         ClimateHigh,
     };
 
+    enum ChargingPolicy {
+        ChargingPolicyOff = 0,
+        ChargingPolicyAllDays,
+        ChargingPolicyWeekdays,
+    };
+
     enum SeatPosition {
         SeatFrontLeft = 0,
         SeatFrontRight,
@@ -104,6 +110,23 @@ namespace TeslaBLE {
                                  size_t *buffer_size);
 
         static int AutoSeatClimate(SeatPosition seat, bool on, unsigned char *buffer, size_t *buffer_size);
+
+        static int SetChargingAmps(int32_t amps, unsigned char *buffer, size_t *buffer_size);
+
+        static int ChargeMaxRange(unsigned char *buffer, size_t *buffer_size);
+
+        static int ChargeStandardRange(unsigned char *buffer, size_t *buffer_size);
+
+        static int ScheduleCharging(bool enabled, int32_t minutes_from_midnight, unsigned char *buffer,
+                                    size_t *buffer_size);
+
+        static int ScheduleDeparture(int32_t departure_minutes, int32_t off_peak_end_minutes,
+                                     ChargingPolicy preconditioning, ChargingPolicy off_peak,
+                                     unsigned char *buffer, size_t *buffer_size);
+
+        static int ClearScheduledDeparture(unsigned char *buffer, size_t *buffer_size);
+
+        static int GetNearbyCharging(unsigned char *buffer, size_t *buffer_size);
     };
 } // TeslaBLE
 

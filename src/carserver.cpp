@@ -418,4 +418,90 @@ namespace TeslaBLE {
         action.carseat[0].seat_position = proto_seat;
         return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
     }
+
+    int CarServer::SetChargingAmps(int32_t amps, unsigned char *buffer, size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_setChargingAmpsAction_tag;
+        vehicle_action.vehicle_action_msg.setChargingAmpsAction.charging_amps = amps;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::ChargeMaxRange(unsigned char *buffer, size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_chargingStartStopAction_tag;
+        vehicle_action.vehicle_action_msg.chargingStartStopAction.which_charging_action =
+            CarServer_ChargingStartStopAction_start_max_range_tag;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::ChargeStandardRange(unsigned char *buffer, size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_chargingStartStopAction_tag;
+        vehicle_action.vehicle_action_msg.chargingStartStopAction.which_charging_action =
+            CarServer_ChargingStartStopAction_start_standard_tag;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::ScheduleCharging(bool enabled, int32_t minutes_from_midnight, unsigned char *buffer,
+                                    size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_scheduledChargingAction_tag;
+        vehicle_action.vehicle_action_msg.scheduledChargingAction.enabled = enabled;
+        vehicle_action.vehicle_action_msg.scheduledChargingAction.charging_time = minutes_from_midnight;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    static bool FillTimes(ChargingPolicy policy, pb_size_t *which, pb_size_t all_week_tag, pb_size_t weekdays_tag) {
+        switch (policy) {
+            case ChargingPolicyOff:
+                return false;
+            case ChargingPolicyAllDays:
+                *which = all_week_tag;
+                return true;
+            case ChargingPolicyWeekdays:
+                *which = weekdays_tag;
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    int CarServer::ScheduleDeparture(int32_t departure_minutes, int32_t off_peak_end_minutes,
+                                     ChargingPolicy preconditioning, ChargingPolicy off_peak,
+                                     unsigned char *buffer, size_t *buffer_size) {
+        if (departure_minutes < 0 || departure_minutes > 24 * 60) {
+            return ResultCode::ERROR;
+        }
+
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_scheduledDepartureAction_tag;
+        auto &dep = vehicle_action.vehicle_action_msg.scheduledDepartureAction;
+        dep.enabled = true;
+        dep.departure_time = departure_minutes;
+        dep.off_peak_hours_end_time = off_peak_end_minutes;
+        dep.has_preconditioning_times =
+            FillTimes(preconditioning, &dep.preconditioning_times.which_times,
+                      CarServer_PreconditioningTimes_all_week_tag, CarServer_PreconditioningTimes_weekdays_tag);
+        dep.has_off_peak_charging_times =
+            FillTimes(off_peak, &dep.off_peak_charging_times.which_times,
+                      CarServer_OffPeakChargingTimes_all_week_tag, CarServer_OffPeakChargingTimes_weekdays_tag);
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::ClearScheduledDeparture(unsigned char *buffer, size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_scheduledDepartureAction_tag;
+        vehicle_action.vehicle_action_msg.scheduledDepartureAction.enabled = false;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::GetNearbyCharging(unsigned char *buffer, size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_getNearbyChargingSites_tag;
+        vehicle_action.vehicle_action_msg.getNearbyChargingSites.include_meta_data = true;
+        vehicle_action.vehicle_action_msg.getNearbyChargingSites.radius = 200;
+        vehicle_action.vehicle_action_msg.getNearbyChargingSites.count = 10;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
 } // TeslaBLE
+
