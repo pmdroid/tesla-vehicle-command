@@ -48,6 +48,18 @@ namespace TeslaBLE {
                 unsigned char *checksum, unsigned char *output_buffer, size_t output_buffer_size,
                 size_t *output_size, unsigned char *tag_buffer);
 
+    int EncryptWithNonce(UniversalMessage_Domain domain, unsigned char *input_buffer,
+                         size_t input_buffer_size, unsigned char *checksum,
+                         unsigned char *nonce, size_t nonce_size,
+                         unsigned char *output_buffer, size_t output_buffer_size,
+                         size_t *output_size, unsigned char *tag_buffer);
+
+    int Decrypt(UniversalMessage_Domain domain, unsigned char *nonce, size_t nonce_size,
+                unsigned char *input_buffer, size_t input_buffer_size,
+                unsigned char *checksum, unsigned char *tag, size_t tag_size,
+                unsigned char *output_buffer, size_t output_buffer_size,
+                size_t *output_size);
+
     int LoadPrivateKey(const uint8_t *private_key_buffer, size_t key_size);
 
     int GetPrivateKey(unsigned char *output_buffer, size_t buffer_size, size_t *output_size);

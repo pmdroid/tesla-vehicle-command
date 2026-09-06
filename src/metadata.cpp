@@ -28,7 +28,8 @@ namespace TeslaBLE {
     }
 
     int MetaData::BuildMetadata(UniversalMessage_Domain destination, Signatures_SignatureType method,
-                                unsigned char *vin, uint32_t expiresAt, uint32_t counter, unsigned char *epoch) {
+                                unsigned char *vin, uint32_t expiresAt, uint32_t counter, unsigned char *epoch,
+                                uint32_t flags) {
         unsigned char method_[1];
         memcpy(method_, &method, 1);
         int result_code = this->Add(Signatures_Tag_TAG_SIGNATURE_TYPE, method_, 1);
@@ -58,7 +59,15 @@ namespace TeslaBLE {
             return result_code;
         }
 
-        return this->AddUint32(Signatures_Tag_TAG_COUNTER, counter);
+        result_code = this->AddUint32(Signatures_Tag_TAG_COUNTER, counter);
+        if (result_code != ResultCode::SUCCESS) {
+            return result_code;
+        }
+
+        if (flags != 0) {
+            return this->AddUint32(Signatures_Tag_TAG_FLAGS, flags);
+        }
+        return ResultCode::SUCCESS;
     }
 
     int MetaData::Add(uint8_t signatures_tag, unsigned char *value, unsigned char value_size) {

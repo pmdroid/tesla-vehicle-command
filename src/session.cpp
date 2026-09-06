@@ -170,11 +170,13 @@ namespace TeslaBLE {
 
         uint32_t counter = this->Counter(domain);
         uint32_t expiresAt = this->ExpiresAt(domain, 10);
+        uint32_t flags = 1u << UniversalMessage_Flags_FLAG_ENCRYPT_RESPONSE;
+        routable_message.flags = flags;
 
         this->meta_data_.Start();
         int result_code = this->meta_data_.BuildMetadata(
             domain, Signatures_SignatureType_SIGNATURE_TYPE_AES_GCM_PERSONALIZED, this->vin_,
-            expiresAt, counter, this->epochs_[domain]);
+            expiresAt, counter, this->epochs_[domain], flags);
         if (result_code != ResultCode::SUCCESS) {
             return result_code;
         }

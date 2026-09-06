@@ -320,10 +320,26 @@ namespace TeslaBLE {
                                size_t input_buffer_size, unsigned char *checksum,
                                unsigned char *output_buffer, size_t output_buffer_size,
                                size_t *output_size, unsigned char *tag_buffer) {
+        this->UpdateNonce();
+        return this->EncryptWithNonce(domain, input_buffer, input_buffer_size, checksum,
+                                      this->nonce_, sizeof(this->nonce_), output_buffer,
+                                      output_buffer_size, output_size, tag_buffer);
+    }
+
+    int Authenticator::EncryptWithNonce(UniversalMessage_Domain domain, unsigned char *input_buffer,
+                                        size_t input_buffer_size, unsigned char *checksum,
+                                        unsigned char *nonce, size_t nonce_size,
+                                        unsigned char *output_buffer, size_t output_buffer_size,
+                                        size_t *output_size, unsigned char *tag_buffer) {
         mbedtls_gcm_context aes_context;
         mbedtls_gcm_init(&aes_context);
 
-        this->UpdateNonce();
+        if (nonce == nullptr || nonce_size != 12) {
+            mbedtls_gcm_free(&aes_context);
+            return ResultCode::ERROR;
+        }
+        memcpy(this->nonce_, nonce, 12);
+
         int return_code = mbedtls_gcm_setkey(&aes_context, MBEDTLS_CIPHER_ID_AES,
                                              this->shared_secrets_[domain],
                                              128);
@@ -369,10 +385,57 @@ namespace TeslaBLE {
 
         if (finish_buffer_length > 0) {
             memcpy(output_buffer + *output_size, finish_buffer, finish_buffer_length);
-            *output_size = output_buffer_size + finish_buffer_length;
+            *output_size += finish_buffer_length;
         }
 
         mbedtls_gcm_free(&aes_context);
+        return ResultCode::SUCCESS;
+    }
+
+    int Authenticator::Decrypt(UniversalMessage_Domain domain, unsigned char *nonce, size_t nonce_size,
+                               unsigned char *input_buffer, size_t input_buffer_size,
+                               unsigned char *checksum, unsigned char *tag, size_t tag_size,
+                               unsigned char *output_buffer, size_t output_buffer_size,
+                               size_t *output_size) {
+        if (nonce == nullptr || nonce_size != 12 || tag == nullptr || tag_size != 16) {
+            return ResultCode::ERROR;
+        }
+        mbedtls_gcm_context aes_context;
+        mbedtls_gcm_init(&aes_context);
+        int return_code = mbedtls_gcm_setkey(&aes_context, MBEDTLS_CIPHER_ID_AES,
+                                             this->shared_secrets_[domain], 128);
+        if (return_code != 0) {
+            mbedtls_gcm_free(&aes_context);
+            return ResultCode::MBEDTLS_ERROR;
+        }
+        return_code = mbedtls_gcm_starts(&aes_context, MBEDTLS_GCM_DECRYPT, nonce, 12);
+        if (return_code != 0) {
+            mbedtls_gcm_free(&aes_context);
+            return ResultCode::MBEDTLS_ERROR;
+        }
+        return_code = mbedtls_gcm_update_ad(&aes_context, checksum, 32);
+        if (return_code != 0) {
+            mbedtls_gcm_free(&aes_context);
+            return ResultCode::MBEDTLS_ERROR;
+        }
+        return_code = mbedtls_gcm_update(&aes_context, input_buffer, input_buffer_size,
+                                         output_buffer, output_buffer_size, output_size);
+        if (return_code != 0) {
+            mbedtls_gcm_free(&aes_context);
+            return ResultCode::MBEDTLS_ERROR;
+        }
+        size_t finish_buffer_length = 0;
+        unsigned char finish_buffer[15];
+        return_code = mbedtls_gcm_finish(&aes_context, finish_buffer, sizeof(finish_buffer),
+                                         &finish_buffer_length, tag, 16);
+        mbedtls_gcm_free(&aes_context);
+        if (return_code != 0) {
+            return ResultCode::MBEDTLS_ERROR;
+        }
+        if (finish_buffer_length > 0) {
+            memcpy(output_buffer + *output_size, finish_buffer, finish_buffer_length);
+            *output_size += finish_buffer_length;
+        }
         return ResultCode::SUCCESS;
     }
 
