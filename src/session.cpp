@@ -102,19 +102,6 @@ namespace TeslaBLE {
             return ResultCode::PRIVATE_KEY_NOT_LOADED;
         }
 
-        uint32_t now = std::time(nullptr);
-        this->clock_times_[domain] = session_info.clock_time;
-        this->time_zeros_[domain] = now - session_info.clock_time;
-        this->counters_[domain] = session_info.counter;
-        memcpy(this->epochs_[domain], session_info.epoch, 16);
-
-        size_t key_size = session_info.publicKey.size;
-        if (key_size > sizeof(this->car_keys[domain])) {
-            key_size = sizeof(this->car_keys[domain]);
-        }
-        memcpy(this->car_keys[domain], session_info.publicKey.bytes, key_size);
-        this->car_key_sizes[domain] = session_info.publicKey.size;
-
         int result = this->authenticator_->LoadTeslaPublicKey(domain, session_info.publicKey.bytes,
                                                               session_info.publicKey.size);
         if (result != ResultCode::SUCCESS) {
@@ -136,6 +123,19 @@ namespace TeslaBLE {
             this->has_valid_session_info_[domain] = false;
             return result;
         }
+
+        uint32_t now = std::time(nullptr);
+        this->clock_times_[domain] = session_info.clock_time;
+        this->time_zeros_[domain] = now - session_info.clock_time;
+        this->counters_[domain] = session_info.counter;
+        memcpy(this->epochs_[domain], session_info.epoch, 16);
+
+        size_t key_size = session_info.publicKey.size;
+        if (key_size > sizeof(this->car_keys[domain])) {
+            key_size = sizeof(this->car_keys[domain]);
+        }
+        memcpy(this->car_keys[domain], session_info.publicKey.bytes, key_size);
+        this->car_key_sizes[domain] = session_info.publicKey.size;
 
         this->has_valid_session_info_[domain] = true;
         return ResultCode::SUCCESS;
