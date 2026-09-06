@@ -126,12 +126,11 @@ namespace TeslaBLE {
     }
 
     void Common::GenerateUUID(unsigned char *output_buffer, uint16_t *output_size) {
-        unsigned char uuid[16];
-        if (Common::RandomBytes(uuid, sizeof(uuid)) != ResultCode::SUCCESS) {
-            memset(uuid, 0, sizeof(uuid));
+        if (Common::RandomBytes(output_buffer, 16) != ResultCode::SUCCESS) {
+            *output_size = 0;
+            return;
         }
-        memcpy(output_buffer, uuid, sizeof(uuid));
-        *output_size = sizeof(uuid);
+        *output_size = 16;
     }
 
     int Common::DecodeRoutableMessage(unsigned char *buffer, size_t buffer_size,
@@ -161,6 +160,9 @@ namespace TeslaBLE {
                                       size_t *output_size) {
         if (routable_message.uuid.size == 0) {
             Common::GenerateUUID(routable_message.uuid.bytes, &routable_message.uuid.size);
+            if (routable_message.uuid.size == 0) {
+                return ResultCode::MBEDTLS_ERROR;
+            }
         }
 
         pb_ostream_t size_stream = {nullptr};

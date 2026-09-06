@@ -31,12 +31,8 @@ extern "C" {
 #include <vcsec.pb.h>
 
 namespace TeslaBLE {
-    void Authenticator::UpdateNonce() {
-        if (Common::RandomBytes(this->nonce_, sizeof(this->nonce_)) != ResultCode::SUCCESS) {
-            for (unsigned char &i: this->nonce_) {
-                i = 0;
-            }
-        }
+    int Authenticator::UpdateNonce() {
+        return Common::RandomBytes(this->nonce_, sizeof(this->nonce_));
     }
 
     void Authenticator::GetNonce(unsigned char *nonce) {
@@ -329,7 +325,10 @@ namespace TeslaBLE {
                                size_t input_buffer_size, unsigned char *checksum,
                                unsigned char *output_buffer, size_t output_buffer_size,
                                size_t *output_size, unsigned char *tag_buffer) {
-        this->UpdateNonce();
+        int nonce_rc = this->UpdateNonce();
+        if (nonce_rc != ResultCode::SUCCESS) {
+            return nonce_rc;
+        }
         return this->EncryptWithNonce(domain, input_buffer, input_buffer_size, checksum,
                                       this->nonce_, sizeof(this->nonce_), output_buffer,
                                       output_buffer_size, output_size, tag_buffer);

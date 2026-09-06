@@ -25,11 +25,8 @@ namespace TeslaBLE {
         this->authenticator_ = authenticator;
     }
 
-    void Session::GenerateRoutingAddress() {
-        if (Common::RandomBytes(this->routing_address_, sizeof(this->routing_address_)) !=
-            ResultCode::SUCCESS) {
-            memset(this->routing_address_, 0, sizeof(this->routing_address_));
-        }
+    int Session::GenerateRoutingAddress() {
+        return Common::RandomBytes(this->routing_address_, sizeof(this->routing_address_));
     }
 
     void Session::SetRoutingAddress(unsigned char *routing_address) {

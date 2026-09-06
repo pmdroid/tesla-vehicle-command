@@ -33,7 +33,7 @@ namespace TeslaBLE {
 
     int GeneratePublicKey();
 
-    void UpdateNonce();
+    int UpdateNonce();
 
   public:
     int BuildKeyWhitelistMessage(Keys_Role role, unsigned char *output_buffer, size_t *output_size);
