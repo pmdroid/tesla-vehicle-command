@@ -57,6 +57,10 @@ namespace TeslaBLE {
 
         static int ToggleClimate(bool status, unsigned char *buffer, size_t *buffer_size);
 
+        static int EmptyVehicleAction(pb_size_t which, unsigned char *buffer, size_t *buffer_size);
+
+        static int VolumeDelta(int32_t delta, unsigned char *buffer, size_t *buffer_size);
+
     public:
         static int TurnOnClimate(unsigned char *buffer, size_t *buffer_size);
 
@@ -127,6 +131,46 @@ namespace TeslaBLE {
         static int ClearScheduledDeparture(unsigned char *buffer, size_t *buffer_size);
 
         static int GetNearbyCharging(unsigned char *buffer, size_t *buffer_size);
+
+        static int HonkHorn(unsigned char *buffer, size_t *buffer_size);
+
+        static int FlashLights(unsigned char *buffer, size_t *buffer_size);
+
+        static int CloseWindows(unsigned char *buffer, size_t *buffer_size);
+
+        static int SetSunroofLevel(int32_t absolute_level, unsigned char *buffer, size_t *buffer_size);
+
+        static int SetSentryMode(bool on, unsigned char *buffer, size_t *buffer_size);
+
+        static int EnableValetMode(const char *pin, unsigned char *buffer, size_t *buffer_size);
+
+        static int DisableValetMode(unsigned char *buffer, size_t *buffer_size);
+
+        static int ResetValetPin(unsigned char *buffer, size_t *buffer_size);
+
+        static int SetGuestMode(bool on, unsigned char *buffer, size_t *buffer_size);
+
+        static int EraseGuestData(unsigned char *buffer, size_t *buffer_size);
+
+        static int Ping(unsigned char *buffer, size_t *buffer_size);
+
+        static int ScheduleSoftwareUpdate(int32_t offset_sec, unsigned char *buffer, size_t *buffer_size);
+
+        static int CancelSoftwareUpdate(unsigned char *buffer, size_t *buffer_size);
+
+        static int TriggerHomelink(float latitude, float longitude, unsigned char *buffer, size_t *buffer_size);
+
+        static int SetVehicleName(const char *name, unsigned char *buffer, size_t *buffer_size);
+
+        static int PreviousMediaTrack(unsigned char *buffer, size_t *buffer_size);
+
+        static int NextMediaFavorite(unsigned char *buffer, size_t *buffer_size);
+
+        static int PreviousMediaFavorite(unsigned char *buffer, size_t *buffer_size);
+
+        static int VolumeUp(unsigned char *buffer, size_t *buffer_size);
+
+        static int VolumeDown(unsigned char *buffer, size_t *buffer_size);
     };
 } // TeslaBLE
 

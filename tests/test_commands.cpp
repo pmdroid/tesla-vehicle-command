@@ -2,6 +2,7 @@
 #include <catch2/generators/catch_generators.hpp>
 
 #include <cstring>
+#include <string>
 
 #include <authenticator.h>
 #include <car_server.pb.h>
@@ -589,4 +590,101 @@ TEST_CASE("GetNearbyCharging encodes Tesla BLE defaults") {
     REQUIRE(sites.include_meta_data);
     REQUIRE(sites.radius == 200);
     REQUIRE(sites.count == 10);
+}
+
+TEST_CASE("HonkHorn encodes honk action") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::HonkHorn(buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE(action.action_msg.vehicleAction.which_vehicle_action_msg ==
+            CarServer_VehicleAction_vehicleControlHonkHornAction_tag);
+}
+
+TEST_CASE("CloseWindows encodes close") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::CloseWindows(buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE(action.action_msg.vehicleAction.vehicle_action_msg.vehicleControlWindowAction.which_action ==
+            CarServer_VehicleControlWindowAction_close_tag);
+}
+
+TEST_CASE("EnableValetMode rejects a short pin") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::EnableValetMode("12", buffer, &size) == ResultCode::ERROR);
+}
+
+TEST_CASE("EnableValetMode encodes a four-digit pin") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::EnableValetMode("1234", buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE(action.action_msg.vehicleAction.vehicle_action_msg.vehicleControlSetValetModeAction.on);
+    REQUIRE(std::string(action.action_msg.vehicleAction.vehicle_action_msg.vehicleControlSetValetModeAction
+                            .password) == "1234");
+}
+
+TEST_CASE("SetGuestMode encodes active") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::SetGuestMode(true, buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE(action.action_msg.vehicleAction.vehicle_action_msg.guestModeAction.GuestModeActive);
+}
+
+TEST_CASE("Ping encodes ping_id 1") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::Ping(buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE(action.action_msg.vehicleAction.vehicle_action_msg.ping.ping_id == 1);
+}
+
+TEST_CASE("VolumeDown encodes negative delta") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::VolumeDown(buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE(action.action_msg.vehicleAction.vehicle_action_msg.mediaUpdateVolume.which_media_volume ==
+            CarServer_MediaUpdateVolume_volume_delta_tag);
+    REQUIRE(action.action_msg.vehicleAction.vehicle_action_msg.mediaUpdateVolume.media_volume.volume_delta == -1);
+}
+
+TEST_CASE("TriggerHomelink encodes coordinates") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::TriggerHomelink(37.4f, -122.1f, buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    const auto &link = action.action_msg.vehicleAction.vehicle_action_msg.vehicleControlTriggerHomelinkAction;
+    REQUIRE(link.has_location);
+    REQUIRE(link.location.latitude == 37.4f);
+}
+
+TEST_CASE("SetVehicleName encodes the name") {
+    unsigned char buffer[64];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::SetVehicleName("Kyoto", buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE(std::string(action.action_msg.vehicleAction.vehicle_action_msg.setVehicleNameAction.vehicleName) ==
+            "Kyoto");
+}
+
+TEST_CASE("SetSunroofLevel encodes absolute level") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::SetSunroofLevel(80, buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE(action.action_msg.vehicleAction.vehicle_action_msg.vehicleControlSunroofOpenCloseAction
+                .sunroof_level.absolute_level == 80);
+}
+
+TEST_CASE("FlashLights encodes flash action") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::FlashLights(buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE(action.action_msg.vehicleAction.which_vehicle_action_msg ==
+            CarServer_VehicleAction_vehicleControlFlashLightsAction_tag);
 }
