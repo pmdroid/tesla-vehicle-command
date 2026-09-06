@@ -739,3 +739,54 @@ TEST_CASE("AddChargeSchedule rejects a null schedule") {
     size_t size = 0;
     REQUIRE(TeslaBLE::CarServer::AddChargeSchedule(nullptr, buffer, &size) == ResultCode::ERROR);
 }
+
+TEST_CASE("ParentalControlsActivate encodes pin") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::ParentalControlsActivate("2468", buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE(action.action_msg.vehicleAction.vehicle_action_msg.parentalControlsAction.activate);
+    REQUIRE(std::string(action.action_msg.vehicleAction.vehicle_action_msg.parentalControlsAction.pin) ==
+            "2468");
+}
+
+TEST_CASE("ParentalControlsActivate rejects a bad pin") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::ParentalControlsActivate("abcd", buffer, &size) == ResultCode::ERROR);
+}
+
+TEST_CASE("SetLowPowerMode encodes on") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::SetLowPowerMode(true, buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE(action.action_msg.vehicleAction.vehicle_action_msg.setLowPowerModeAction.low_power_mode);
+}
+
+TEST_CASE("SetKeepAccessoryPowerMode encodes on") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::SetKeepAccessoryPowerMode(true, buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE(action.action_msg.vehicleAction.vehicle_action_msg.setKeepAccessoryPowerModeAction
+                .keep_accessory_power_mode);
+}
+
+TEST_CASE("ClearPinToDriveAdmin encodes admin reset") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::ClearPinToDriveAdmin(buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE(action.action_msg.vehicleAction.which_vehicle_action_msg ==
+            CarServer_VehicleAction_vehicleControlResetPinToDriveAdminAction_tag);
+}
+
+TEST_CASE("ParentalControlsSetSpeedLimit encodes mph") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::ParentalControlsSetSpeedLimit(65.0, buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE(action.action_msg.vehicleAction.vehicle_action_msg.parentalControlsSetSpeedLimitAction.limit_mph ==
+            65.0);
+}

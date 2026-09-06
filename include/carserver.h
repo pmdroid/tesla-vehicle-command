@@ -61,6 +61,9 @@ namespace TeslaBLE {
 
         static int VolumeDelta(int32_t delta, unsigned char *buffer, size_t *buffer_size);
 
+        static int ParentalControlsSet(bool activate, const char *pin, unsigned char *buffer,
+                                       size_t *buffer_size);
+
     public:
         static int TurnOnClimate(unsigned char *buffer, size_t *buffer_size);
 
@@ -187,6 +190,26 @@ namespace TeslaBLE {
 
         static int BatchRemovePreconditionSchedules(bool home, bool work, bool other, unsigned char *buffer,
                                                     size_t *buffer_size);
+
+        static int ClearSpeedLimitPinAdmin(unsigned char *buffer, size_t *buffer_size);
+
+        static int ClearPinToDriveAdmin(unsigned char *buffer, size_t *buffer_size);
+
+        static int ParentalControlsActivate(const char *pin, unsigned char *buffer, size_t *buffer_size);
+
+        static int ParentalControlsDeactivate(const char *pin, unsigned char *buffer, size_t *buffer_size);
+
+        static int ParentalControlsEnableSetting(
+            CarServer_ParentalControlsEnableSettingsAction_ParentalControlsSetting_E setting, bool enable,
+            unsigned char *buffer, size_t *buffer_size);
+
+        static int ParentalControlsSetSpeedLimit(double limit_mph, unsigned char *buffer, size_t *buffer_size);
+
+        static int ParentalControlsClearPinAdmin(unsigned char *buffer, size_t *buffer_size);
+
+        static int SetLowPowerMode(bool on, unsigned char *buffer, size_t *buffer_size);
+
+        static int SetKeepAccessoryPowerMode(bool on, unsigned char *buffer, size_t *buffer_size);
     };
 } // TeslaBLE
 
