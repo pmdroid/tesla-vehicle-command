@@ -42,8 +42,10 @@ namespace TeslaBLE {
                 value = (10 + (c - 'A'));
             else if (c >= 'a' && c <= 'f')
                 value = (10 + (c - 'a'));
-            else
+            else {
+                free(data);
                 return NULL;
+            }
 
             data[(index / 2)] += value << (((index + 1) % 2) * 4);
             index++;
@@ -77,11 +79,8 @@ namespace TeslaBLE {
     }
 
     int Common::calculateIdentifier(unsigned char *vin, char *output) {
-        unsigned char parsed_vin[18];
-        strcpy((char *) parsed_vin, (char *) vin);
-
         unsigned char hashed_vin[20];
-        const int return_code = mbedtls_sha1(parsed_vin, 17, hashed_vin);
+        const int return_code = mbedtls_sha1(vin, 17, hashed_vin);
         if (return_code != 0) {
             Common::PrintErrorFromMbedTlsErrorCode(return_code);
             return 1;
@@ -89,7 +88,7 @@ namespace TeslaBLE {
 
         output[0] = 'S';
         for (int i = 0; i < 8; ++i) {
-            sprintf(&output[1 + i * 2], "%02x", hashed_vin[i]);
+            snprintf(&output[1 + i * 2], 3, "%02x", hashed_vin[i]);
         }
         output[17] = 'C';
         output[18] = '\0';

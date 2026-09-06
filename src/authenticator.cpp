@@ -163,6 +163,9 @@ namespace TeslaBLE {
 
     int Authenticator::LoadPrivateKey(const uint8_t *private_key_buffer,
                                       size_t private_key_size) {
+        if (this->private_key_loaded_) {
+            this->Cleanup();
+        }
         mbedtls_entropy_context entropy_context;
         mbedtls_entropy_init(&entropy_context);
 
@@ -252,6 +255,7 @@ namespace TeslaBLE {
             return ResultCode::MBEDTLS_ERROR;
         }
 
+        mbedtls_ecdh_free(&this->ecdh_context_);
         mbedtls_ecdh_init(&this->ecdh_context_);
         return_code = mbedtls_ecdh_get_params(
             &this->ecdh_context_, mbedtls_pk_ec(this->private_key_context_),
@@ -354,6 +358,7 @@ namespace TeslaBLE {
 
         if (return_code != 0) {
             Common::PrintErrorFromMbedTlsErrorCode(return_code);
+            mbedtls_gcm_free(&aes_context);
             return ResultCode::MBEDTLS_ERROR;
         }
 
@@ -361,12 +366,14 @@ namespace TeslaBLE {
                                          12);
         if (return_code != 0) {
             Common::PrintErrorFromMbedTlsErrorCode(return_code);
+            mbedtls_gcm_free(&aes_context);
             return ResultCode::MBEDTLS_ERROR;
         }
 
         return_code = mbedtls_gcm_update_ad(&aes_context, checksum, 32);
         if (return_code != 0) {
             Common::PrintErrorFromMbedTlsErrorCode(return_code);
+            mbedtls_gcm_free(&aes_context);
             return ResultCode::MBEDTLS_ERROR;
         }
 
@@ -376,6 +383,7 @@ namespace TeslaBLE {
 
         if (return_code != 0) {
             Common::PrintErrorFromMbedTlsErrorCode(return_code);
+            mbedtls_gcm_free(&aes_context);
             return ResultCode::MBEDTLS_ERROR;
         }
 
@@ -388,6 +396,7 @@ namespace TeslaBLE {
 
         if (return_code != 0) {
             Common::PrintErrorFromMbedTlsErrorCode(return_code);
+            mbedtls_gcm_free(&aes_context);
             return ResultCode::MBEDTLS_ERROR;
         }
 
@@ -547,5 +556,13 @@ namespace TeslaBLE {
         mbedtls_pk_free(&this->private_key_context_);
         mbedtls_ecdh_free(&this->ecdh_context_);
         mbedtls_ctr_drbg_free(&this->drbg_context_);
+        mbedtls_pk_init(&this->private_key_context_);
+        mbedtls_ecdh_init(&this->ecdh_context_);
+        mbedtls_ctr_drbg_init(&this->drbg_context_);
+        for (auto &entry: this->shared_secrets_) {
+            mbedtls_platform_zeroize(entry.second, 16);
+        }
+        this->shared_secrets_.clear();
+        this->private_key_loaded_ = false;
     }
 } // namespace TeslaBLE

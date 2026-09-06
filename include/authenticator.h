@@ -36,12 +36,14 @@ namespace TeslaBLE {
     int UpdateNonce();
 
   public:
+    Authenticator() = default;
+    ~Authenticator() { Cleanup(); }
+    Authenticator(const Authenticator &) = delete;
+    Authenticator &operator=(const Authenticator &) = delete;
+
     int BuildKeyWhitelistMessage(Keys_Role role, unsigned char *output_buffer, size_t *output_size);
 
     int CreatePrivateKey();
-
-    int LoadPrivateKey(mbedtls_pk_context *shared_private_key_context, unsigned char *private_key_buffer,
-                       size_t private_key_size);
 
     int Encrypt(UniversalMessage_Domain domain, unsigned char *input_buffer,
                 size_t input_buffer_size,
