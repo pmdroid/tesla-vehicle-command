@@ -45,7 +45,7 @@ namespace TeslaBLE {
     int CarServer::StopCharging(unsigned char *buffer, size_t *buffer_size) {
         CarServer_ChargingStartStopAction start_stop_charging = CarServer_ChargingStartStopAction_init_default;
         start_stop_charging.charging_action.stop.dummy_field = 1;
-        start_stop_charging.which_charging_action = CarServer_ChargingStartStopAction_start_tag;
+        start_stop_charging.which_charging_action = CarServer_ChargingStartStopAction_stop_tag;
 
         CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_default;
         vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_chargingStartStopAction_tag;
@@ -74,12 +74,12 @@ namespace TeslaBLE {
     }
 
     int CarServer::CloseChargePort(unsigned char *buffer, size_t *buffer_size) {
-        CarServer_ChargePortDoorOpen open_chargeport = CarServer_ChargePortDoorOpen_init_default;
-        open_chargeport.dummy_field = 1;
+        CarServer_ChargePortDoorClose close_chargeport = CarServer_ChargePortDoorClose_init_default;
+        close_chargeport.dummy_field = 1;
 
         CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_default;
-        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_chargePortDoorOpen_tag;
-        vehicle_action.vehicle_action_msg.chargePortDoorOpen = open_chargeport;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_chargePortDoorClose_tag;
+        vehicle_action.vehicle_action_msg.chargePortDoorClose = close_chargeport;
 
         CarServer_Action car_server_action = CarServer_Action_init_default;
         car_server_action.action_msg.vehicleAction = vehicle_action;
