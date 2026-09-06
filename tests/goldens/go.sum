@@ -1,0 +1,6 @@
+github.com/google/go-cmp v0.5.8 h1:e6P7q2lk1O+qJJb4BtCQXlK8vWEO8V1ZeuEdJNOqZyg=
+github.com/google/go-cmp v0.5.8/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeNGIjoY=
+github.com/teslamotors/vehicle-command v0.4.2-0.20260731214052-f97fa1e4bf61 h1:R6JgRbKvMG6PR4xFCWQKhk+N4Mcle2uwWhlSsGt+0gE=
+github.com/teslamotors/vehicle-command v0.4.2-0.20260731214052-f97fa1e4bf61/go.mod h1:liN6VG6MCc7m02wFaBm2sQT6MYGm/dJua6bG00QSpnA=
+google.golang.org/protobuf v1.34.2 h1:6xV6lTsCfpGD21XK49h7MhtcApnLqkfYgPcdHftf6hg=
+google.golang.org/protobuf v1.34.2/go.mod h1:qYOHts0dSfpeUzUFpOMr/WGzszTmLH+DiWniOlNbLDw=

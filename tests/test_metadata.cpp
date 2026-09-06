@@ -45,6 +45,27 @@ TEST_CASE("metadata checksum matches Tesla protocol.md HVAC vector without flags
     REQUIRE(std::vector<uint8_t>(checksum, checksum + 32) == expected);
 }
 
+TEST_CASE("metadata checksum includes TAG_FLAGS when flags are non-zero") {
+    unsigned char vin[17];
+    memcpy(vin, "5YJ30123456789ABC", 17);
+    auto epoch = ParseHex("4c463f9cc0d3d26906e982ed224adde6");
+    auto expected_tlv = ParseHex(
+        "000105010103021135594a333031323334353637383941424303104c463f9cc0d3d26906e982ed224adde6040400000a5f050400000007070400000002ff");
+    unsigned char expected[32];
+    REQUIRE(mbedtls_sha256(expected_tlv.data(), expected_tlv.size(), expected, 0) == 0);
+
+    TeslaBLE::MetaData meta;
+    REQUIRE(meta.Start() == ResultCode::SUCCESS);
+    REQUIRE(meta.BuildMetadata(
+                UniversalMessage_Domain_DOMAIN_INFOTAINMENT,
+                Signatures_SignatureType_SIGNATURE_TYPE_AES_GCM_PERSONALIZED, vin, 2655, 7,
+                epoch.data(), 1u << UniversalMessage_Flags_FLAG_ENCRYPT_RESPONSE) ==
+            ResultCode::SUCCESS);
+    unsigned char checksum[32];
+    meta.Checksum(checksum, Signatures_Tag_TAG_END);
+    REQUIRE(std::vector<uint8_t>(checksum, checksum + 32) == std::vector<uint8_t>(expected, expected + 32));
+}
+
 TEST_CASE("metadata checksum changes when counter changes") {
     unsigned char vin[17];
     memcpy(vin, "5YJ30123456789ABC", 17);

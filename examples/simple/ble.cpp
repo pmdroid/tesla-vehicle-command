@@ -40,17 +40,26 @@ void message_handler(UniversalMessage_RoutableMessage routable_message) {
     }
 
     if (routable_message.which_payload == UniversalMessage_RoutableMessage_session_info_tag) {
+        unsigned char *tag = nullptr;
+        size_t tag_size = 0;
+        if (routable_message.which_sub_sigData == UniversalMessage_RoutableMessage_signature_data_tag &&
+            routable_message.sub_sigData.signature_data.which_sig_type ==
+            Signatures_SignatureData_session_info_tag_tag) {
+            tag = routable_message.sub_sigData.signature_data.sig_type.session_info_tag.tag.bytes;
+            tag_size = routable_message.sub_sigData.signature_data.sig_type.session_info_tag.tag.size;
+        }
         session.UpdateSessionInfo(routable_message.from_destination.sub_destination.
                                   domain,
                                   routable_message.payload.session_info.bytes,
-                                  routable_message.payload.session_info.size);
+                                  routable_message.payload.session_info.size,
+                                  tag, tag_size);
     }
 }
 
 int main() {
     const char *vin = "XP7YGCEL0NB000000";
-    unsigned char private_key[227] =
-            "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEICrUkL0StUxZNhVRkK+QmeGDXVQvyjB6Iar8WQu3dDrloAoGCCqGSM49\nAwEHoUQDQgAEsvEtszFQqp8a83gIXsRBaS3UhOf6dgQDBoZWXSXIozABiawOfNF/\nOydB4e9zX5DiZYwTnUbWYlpqMk08cn4ZeA==\n-----END EC PRIVATE KEY-----";
+    unsigned char private_key[] =
+            "-----BEGIN EC PRIVATE KEY-----\nMHcCAQEEICU4zcKal8GcHpmmN9bPT4yXDBGLVu3h5jI+bRYsSzDboAoGCCqGSM49\nAwEHoUQDQgAEsra8aMLaBmXOZWgVWUmWxiOU7di+qQX+eBp1T+aoRacUMwkC8iXp\nJp1GbgWzSZgf2p2FzCPG+0RKpztikQXcbg==\n-----END EC PRIVATE KEY-----\n";
 
     TeslaBLE::Authenticator authenticator = TeslaBLE::Authenticator{};
     authenticator.LoadPrivateKey(private_key, sizeof private_key);
@@ -119,7 +128,9 @@ int main() {
         std::cout << "\n";
         switch (userInput) {
             case 1:
-                authenticator.BuildKeyWhitelistMessage(Keys_Role_ROLE_OWNER, whitelist_buffer, &whitelist_size);
+                authenticator.BuildKeyWhitelistMessage(Keys_Role_ROLE_OWNER,
+                                                       VCSEC_KeyFormFactor_KEY_FORM_FACTOR_ANDROID_DEVICE,
+                                                       whitelist_buffer, &whitelist_size);
                 std::cout << "\n\n\nTouch NFC Card now!\n\n\n";
                 break;
             case 2:

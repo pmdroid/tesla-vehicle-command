@@ -13,16 +13,19 @@
 
 namespace TeslaBLE {
     class Session {
-        std::map<UniversalMessage_Domain, uint32_t> time_zeros_;
-        std::map<UniversalMessage_Domain, uint32_t> counters_;
-        std::map<UniversalMessage_Domain, unsigned char[16]> epochs_;
-        std::map<UniversalMessage_Domain, uint32_t> clock_times_;
-        std::map<UniversalMessage_Domain, unsigned char[65]> car_keys;
-        std::map<UniversalMessage_Domain, size_t> car_key_sizes;
+        static constexpr unsigned kDomainSlots = 4;
+        uint32_t time_zeros_[kDomainSlots]{};
+        uint32_t counters_[kDomainSlots]{};
+        unsigned char epochs_[kDomainSlots][16]{};
+        uint32_t clock_times_[kDomainSlots]{};
+        unsigned char car_keys[kDomainSlots][65]{};
+        size_t car_key_sizes[kDomainSlots]{};
+        bool has_valid_session_info_[kDomainSlots]{};
+        unsigned char request_uuids_[kDomainSlots][16]{};
+        size_t request_uuid_sizes_[kDomainSlots]{};
 
         unsigned char vin_[17]{};
         unsigned char routing_address_[16]{};
-        bool has_valid_session_info = false;
 
         MetaData meta_data_ = MetaData{};
         Authenticator *authenticator_ = nullptr;
@@ -30,23 +33,18 @@ namespace TeslaBLE {
     public:
         void LoadAuthenticator(Authenticator *authenticator);
 
-        int LoadPrivateKey(unsigned char *private_key, size_t private_key_size);
-
-        void LoadPrivateKeyContext(mbedtls_pk_context *shared_private_key_context_);
-
-        void GenerateRoutingAddress();
+        int GenerateRoutingAddress();
 
         void SetRoutingAddress(unsigned char *routing_address);
 
+        void SetRequestUuid(UniversalMessage_Domain domain, unsigned char *uuid, size_t uuid_size);
+
         int UpdateSessionInfo(UniversalMessage_Domain domain, unsigned char *session_info_message,
-                              size_t session_info_length);
+                              size_t session_info_length, unsigned char *tag, size_t tag_length);
 
         int BuildRoutableMessage(UniversalMessage_Domain domain, unsigned char *action_message_buffer,
                                  size_t action_message_buffer_size, unsigned char *output_buffer,
                                  size_t *output_buffer_size);
-
-        int BuildActionMessage(UniversalMessage_Domain domain, const CarServer_VehicleAction *vehicle_action,
-                               unsigned char *buffer, size_t *buffer_size);
 
         int BuildRequestSessionInfoMessage(UniversalMessage_Domain domain,
                                            unsigned char *output_buffer, size_t *output_length);
@@ -60,6 +58,8 @@ namespace TeslaBLE {
         void SetVIN(unsigned char *vin);
 
         int ExportSessionInfo(UniversalMessage_Domain domain, unsigned char *output_buffer, size_t *output_size);
+
+        int ImportSessionInfo(UniversalMessage_Domain domain, unsigned char *input_buffer, size_t input_size);
     };
 } // TeslaBLE
 

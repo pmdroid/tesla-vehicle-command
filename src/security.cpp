@@ -5,6 +5,7 @@
 #include "security.h"
 
 #include <cstdio>
+#include <cstring>
 
 #include <vcsec.pb.h>
 
@@ -31,24 +32,121 @@ namespace TeslaBLE {
         return ResultCode::SUCCESS;
     }
 
-    int Security::Unlock(unsigned char *buffer, size_t *buffer_size) {
-        VCSEC_UnsignedMessage unsigned_message = VCSEC_UnsignedMessage{};
-        unsigned_message.sub_message.RKEAction = VCSEC_RKEAction_E_RKE_ACTION_UNLOCK;
+    int Security::BuildRkeAction(VCSEC_RKEAction_E action, unsigned char *buffer, size_t *buffer_size) {
+        VCSEC_UnsignedMessage unsigned_message = VCSEC_UnsignedMessage_init_zero;
         unsigned_message.which_sub_message = VCSEC_UnsignedMessage_RKEAction_tag;
+        unsigned_message.sub_message.RKEAction = action;
         return Security::BuildUnsignedMessage(&unsigned_message, buffer, buffer_size);
+    }
+
+    int Security::BuildClosureMove(VCSEC_ClosureMoveType_E rear_trunk, VCSEC_ClosureMoveType_E front_trunk,
+                                   VCSEC_ClosureMoveType_E tonneau, unsigned char *buffer, size_t *buffer_size) {
+        VCSEC_UnsignedMessage unsigned_message = VCSEC_UnsignedMessage_init_zero;
+        unsigned_message.which_sub_message = VCSEC_UnsignedMessage_closureMoveRequest_tag;
+        unsigned_message.sub_message.closureMoveRequest.rearTrunk = rear_trunk;
+        unsigned_message.sub_message.closureMoveRequest.frontTrunk = front_trunk;
+        unsigned_message.sub_message.closureMoveRequest.tonneau = tonneau;
+        return Security::BuildUnsignedMessage(&unsigned_message, buffer, buffer_size);
+    }
+
+    int Security::Unlock(unsigned char *buffer, size_t *buffer_size) {
+        return Security::BuildRkeAction(VCSEC_RKEAction_E_RKE_ACTION_UNLOCK, buffer, buffer_size);
     }
 
     int Security::Lock(unsigned char *buffer, size_t *buffer_size) {
-        VCSEC_UnsignedMessage unsigned_message = VCSEC_UnsignedMessage{};
-        unsigned_message.sub_message.RKEAction = VCSEC_RKEAction_E_RKE_ACTION_LOCK;
-        unsigned_message.which_sub_message = VCSEC_UnsignedMessage_RKEAction_tag;
-        return Security::BuildUnsignedMessage(&unsigned_message, buffer, buffer_size);
+        return Security::BuildRkeAction(VCSEC_RKEAction_E_RKE_ACTION_LOCK, buffer, buffer_size);
     }
 
     int Security::Wake(unsigned char *buffer, size_t *buffer_size) {
-        VCSEC_UnsignedMessage unsigned_message = VCSEC_UnsignedMessage{};
-        unsigned_message.sub_message.RKEAction = VCSEC_RKEAction_E_RKE_ACTION_WAKE_VEHICLE;
-        unsigned_message.which_sub_message = VCSEC_UnsignedMessage_RKEAction_tag;
+        return Security::BuildRkeAction(VCSEC_RKEAction_E_RKE_ACTION_WAKE_VEHICLE, buffer, buffer_size);
+    }
+
+    int Security::AutoSecure(unsigned char *buffer, size_t *buffer_size) {
+        return Security::BuildRkeAction(VCSEC_RKEAction_E_RKE_ACTION_AUTO_SECURE_VEHICLE, buffer, buffer_size);
+    }
+
+    int Security::RemoteDrive(unsigned char *buffer, size_t *buffer_size) {
+        return Security::BuildRkeAction(VCSEC_RKEAction_E_RKE_ACTION_REMOTE_DRIVE, buffer, buffer_size);
+    }
+
+    int Security::OpenTrunk(unsigned char *buffer, size_t *buffer_size) {
+        return Security::BuildClosureMove(VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_MOVE,
+                                          VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_NONE,
+                                          VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_NONE, buffer, buffer_size);
+    }
+
+    int Security::CloseTrunk(unsigned char *buffer, size_t *buffer_size) {
+        return Security::BuildClosureMove(VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_CLOSE,
+                                          VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_NONE,
+                                          VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_NONE, buffer, buffer_size);
+    }
+
+    int Security::OpenFrunk(unsigned char *buffer, size_t *buffer_size) {
+        return Security::BuildClosureMove(VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_NONE,
+                                          VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_MOVE,
+                                          VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_NONE, buffer, buffer_size);
+    }
+
+    int Security::OpenTonneau(unsigned char *buffer, size_t *buffer_size) {
+        return Security::BuildClosureMove(VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_NONE,
+                                          VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_NONE,
+                                          VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_OPEN, buffer, buffer_size);
+    }
+
+    int Security::CloseTonneau(unsigned char *buffer, size_t *buffer_size) {
+        return Security::BuildClosureMove(VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_NONE,
+                                          VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_NONE,
+                                          VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_CLOSE, buffer, buffer_size);
+    }
+
+    int Security::StopTonneau(unsigned char *buffer, size_t *buffer_size) {
+        return Security::BuildClosureMove(VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_NONE,
+                                          VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_NONE,
+                                          VCSEC_ClosureMoveType_E_CLOSURE_MOVE_TYPE_STOP, buffer, buffer_size);
+    }
+
+    int Security::GetStatus(unsigned char *buffer, size_t *buffer_size) {
+        VCSEC_UnsignedMessage unsigned_message = VCSEC_UnsignedMessage_init_zero;
+        unsigned_message.which_sub_message = VCSEC_UnsignedMessage_InformationRequest_tag;
+        unsigned_message.sub_message.InformationRequest.informationRequestType =
+            VCSEC_InformationRequestType_INFORMATION_REQUEST_TYPE_GET_STATUS;
+        return Security::BuildUnsignedMessage(&unsigned_message, buffer, buffer_size);
+    }
+
+    int Security::GetWhitelistInfo(unsigned char *buffer, size_t *buffer_size) {
+        VCSEC_UnsignedMessage unsigned_message = VCSEC_UnsignedMessage_init_zero;
+        unsigned_message.which_sub_message = VCSEC_UnsignedMessage_InformationRequest_tag;
+        unsigned_message.sub_message.InformationRequest.informationRequestType =
+            VCSEC_InformationRequestType_INFORMATION_REQUEST_TYPE_GET_WHITELIST_INFO;
+        return Security::BuildUnsignedMessage(&unsigned_message, buffer, buffer_size);
+    }
+
+    int Security::GetWhitelistEntryInfo(uint32_t slot, unsigned char *buffer, size_t *buffer_size) {
+        VCSEC_UnsignedMessage unsigned_message = VCSEC_UnsignedMessage_init_zero;
+        unsigned_message.which_sub_message = VCSEC_UnsignedMessage_InformationRequest_tag;
+        unsigned_message.sub_message.InformationRequest.informationRequestType =
+            VCSEC_InformationRequestType_INFORMATION_REQUEST_TYPE_GET_WHITELIST_ENTRY_INFO;
+        unsigned_message.sub_message.InformationRequest.which_key = VCSEC_InformationRequest_slot_tag;
+        unsigned_message.sub_message.InformationRequest.key.slot = slot;
+        return Security::BuildUnsignedMessage(&unsigned_message, buffer, buffer_size);
+    }
+
+    int Security::RemoveKey(const unsigned char *public_key, size_t public_key_size, unsigned char *buffer,
+                            size_t *buffer_size) {
+        if (public_key == nullptr || public_key_size == 0 ||
+            public_key_size > sizeof(VCSEC_PublicKey_PublicKeyRaw_t().bytes)) {
+            return ResultCode::ERROR;
+        }
+
+        VCSEC_UnsignedMessage unsigned_message = VCSEC_UnsignedMessage_init_zero;
+        unsigned_message.which_sub_message = VCSEC_UnsignedMessage_WhitelistOperation_tag;
+        unsigned_message.sub_message.WhitelistOperation.which_sub_message =
+            VCSEC_WhitelistOperation_removePublicKeyFromWhitelist_tag;
+        memcpy(unsigned_message.sub_message.WhitelistOperation.sub_message.removePublicKeyFromWhitelist.PublicKeyRaw
+                   .bytes,
+               public_key, public_key_size);
+        unsigned_message.sub_message.WhitelistOperation.sub_message.removePublicKeyFromWhitelist.PublicKeyRaw.size =
+            public_key_size;
         return Security::BuildUnsignedMessage(&unsigned_message, buffer, buffer_size);
     }
 } // TeslaBLE

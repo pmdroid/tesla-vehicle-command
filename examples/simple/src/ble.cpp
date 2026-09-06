@@ -19,47 +19,19 @@ namespace TeslaBLE {
 
         UniversalMessage_RoutableMessage output_message = UniversalMessage_RoutableMessage_init_zero;
         Common::DecodeRoutableMessage(message.data(), message.size(), &output_message);
-
-        current_message_size = 0;
-        this->message_buffer.clear();
-        this->message_buffer.resize(0);
-        this->message_buffer.shrink_to_fit();
-
+        this->frame_.Reset();
         this->message_handler(output_message);
     }
 
     void BLE::callback(SimpleBLE::ByteArray payload) {
-        pb_byte_t input_buffer[payload.size()];
-        memcpy(input_buffer, payload.data(), payload.size());
-
-        const size_t size = TeslaBLE::Common::ExtractLength(input_buffer);
-        if (current_message_size == 0 && size > payload.size()) {
-            message_buffer.clear();
-            message_buffer.resize(size);
-            message_buffer.shrink_to_fit();
-            current_message_size = 0;
-
-            size_t payload_size = payload.size() - 2;
-            memcpy(message_buffer.data(), input_buffer + 2, payload_size);
-            current_message_size = payload_size;
-            return;
+        auto status = this->frame_.Add(reinterpret_cast<const uint8_t *>(payload.data()), payload.size());
+        if (status == BleFrame::COMPLETE) {
+            std::vector<unsigned char> message(this->frame_.Payload(),
+                                               this->frame_.Payload() + this->frame_.PayloadSize());
+            this->handleMessage(message);
+        } else if (status == BleFrame::ERROR) {
+            this->frame_.Reset();
         }
-
-        if (current_message_size > 0) {
-            memcpy(message_buffer.data() + current_message_size, input_buffer, payload.size());
-            current_message_size = current_message_size + payload.size();
-            this->handleMessage(message_buffer);
-            return;
-        }
-
-        message_buffer.clear();
-        message_buffer.resize(size);
-        message_buffer.shrink_to_fit();
-        current_message_size = 0;
-
-        size_t payload_size = payload.size() - 2;
-        memcpy(message_buffer.data(), input_buffer + 2, payload_size);
-        this->handleMessage(message_buffer);
     }
 
     int BLE::connect(unsigned char *vin) {
