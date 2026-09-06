@@ -51,9 +51,94 @@ typedef enum _CarServer_HvacClimateKeeperAction_ClimateKeeperAction_E {
     CarServer_HvacClimateKeeperAction_ClimateKeeperAction_E_ClimateKeeperAction_Camp = 3
 } CarServer_HvacClimateKeeperAction_ClimateKeeperAction_E;
 
+typedef enum _CarServer_ParentalControlsEnableSettingsAction_ParentalControlsSetting_E {
+    CarServer_ParentalControlsEnableSettingsAction_ParentalControlsSetting_E_SpeedLimit = 0,
+    CarServer_ParentalControlsEnableSettingsAction_ParentalControlsSetting_E_Acceleration = 1,
+    CarServer_ParentalControlsEnableSettingsAction_ParentalControlsSetting_E_SafetyFeatures = 2,
+    CarServer_ParentalControlsEnableSettingsAction_ParentalControlsSetting_E_Curfew = 3,
+    CarServer_ParentalControlsEnableSettingsAction_ParentalControlsSetting_E_BrowserBlocked = 4,
+    CarServer_ParentalControlsEnableSettingsAction_ParentalControlsSetting_E_TheaterBlocked = 5,
+    CarServer_ParentalControlsEnableSettingsAction_ParentalControlsSetting_E_ArcadeBlocked = 6
+} CarServer_ParentalControlsEnableSettingsAction_ParentalControlsSetting_E;
+
 /* Struct definitions */
+typedef struct _CarServer_GetTirePressureState {
+    char dummy_field;
+} CarServer_GetTirePressureState;
+
+typedef struct _CarServer_GetMediaState {
+    char dummy_field;
+} CarServer_GetMediaState;
+
+typedef struct _CarServer_GetMediaDetailState {
+    char dummy_field;
+} CarServer_GetMediaDetailState;
+
+typedef struct _CarServer_GetSoftwareUpdateState {
+    char dummy_field;
+} CarServer_GetSoftwareUpdateState;
+
+typedef struct _CarServer_GetChargeState {
+    char dummy_field;
+} CarServer_GetChargeState;
+
+typedef struct _CarServer_GetClimateState {
+    char dummy_field;
+} CarServer_GetClimateState;
+
+typedef struct _CarServer_GetDriveState {
+    char dummy_field;
+} CarServer_GetDriveState;
+
+typedef struct _CarServer_GetLocationState {
+    char dummy_field;
+} CarServer_GetLocationState;
+
+typedef struct _CarServer_GetClosuresState {
+    char dummy_field;
+} CarServer_GetClosuresState;
+
+typedef struct _CarServer_GetChargeScheduleState {
+    char dummy_field;
+} CarServer_GetChargeScheduleState;
+
+typedef struct _CarServer_GetPreconditioningScheduleState {
+    char dummy_field;
+} CarServer_GetPreconditioningScheduleState;
+
+typedef struct _CarServer_GetParentalControlsState {
+    char dummy_field;
+} CarServer_GetParentalControlsState;
+
+typedef struct _CarServer_GetVehicleData {
+    bool has_getChargeState;
+    CarServer_GetChargeState getChargeState;
+    bool has_getClimateState;
+    CarServer_GetClimateState getClimateState;
+    bool has_getDriveState;
+    CarServer_GetDriveState getDriveState;
+    bool has_getLocationState;
+    CarServer_GetLocationState getLocationState;
+    bool has_getClosuresState;
+    CarServer_GetClosuresState getClosuresState;
+    bool has_getChargeScheduleState;
+    CarServer_GetChargeScheduleState getChargeScheduleState;
+    bool has_getPreconditioningScheduleState;
+    CarServer_GetPreconditioningScheduleState getPreconditioningScheduleState;
+    bool has_getTirePressureState;
+    CarServer_GetTirePressureState getTirePressureState;
+    bool has_getMediaState;
+    CarServer_GetMediaState getMediaState;
+    bool has_getMediaDetailState;
+    CarServer_GetMediaDetailState getMediaDetailState;
+    bool has_getSoftwareUpdateState;
+    CarServer_GetSoftwareUpdateState getSoftwareUpdateState;
+    bool has_getParentalControlsState;
+    CarServer_GetParentalControlsState getParentalControlsState;
+} CarServer_GetVehicleData;
+
 typedef struct _CarServer_EraseUserDataAction {
-    pb_callback_t reason;
+    char reason[64];
 } CarServer_EraseUserDataAction;
 
 typedef struct _CarServer_ResultReason {
@@ -69,10 +154,12 @@ typedef struct _CarServer_ActionStatus {
     CarServer_ResultReason result_reason;
 } CarServer_ActionStatus;
 
+typedef PB_BYTES_ARRAY_T(256) CarServer_EncryptedData_ciphertext_t;
+typedef PB_BYTES_ARRAY_T(16) CarServer_EncryptedData_tag_t;
 typedef struct _CarServer_EncryptedData {
     int32_t field_number;
-    pb_callback_t ciphertext;
-    pb_callback_t tag;
+    CarServer_EncryptedData_ciphertext_t ciphertext;
+    CarServer_EncryptedData_tag_t tag;
 } CarServer_EncryptedData;
 
 typedef struct _CarServer_ChargingSetLimitAction {
@@ -91,8 +178,12 @@ typedef struct _CarServer_ChargingStartStopAction {
 } CarServer_ChargingStartStopAction;
 
 typedef struct _CarServer_DrivingClearSpeedLimitPinAction {
-    pb_callback_t pin;
+    char pin[16];
 } CarServer_DrivingClearSpeedLimitPinAction;
+
+typedef struct _CarServer_DrivingClearSpeedLimitPinAdminAction {
+    char dummy_field;
+} CarServer_DrivingClearSpeedLimitPinAdminAction;
 
 typedef struct _CarServer_DrivingSetSpeedLimitAction {
     double limit_mph;
@@ -100,17 +191,13 @@ typedef struct _CarServer_DrivingSetSpeedLimitAction {
 
 typedef struct _CarServer_DrivingSpeedLimitAction {
     bool activate;
-    pb_callback_t pin;
+    char pin[16];
 } CarServer_DrivingSpeedLimitAction;
 
 typedef struct _CarServer_HvacAutoAction {
     bool power_on;
     bool manual_override;
 } CarServer_HvacAutoAction;
-
-typedef struct _CarServer_HvacSeatHeaterActions {
-    pb_callback_t hvacSeatHeaterAction;
-} CarServer_HvacSeatHeaterActions;
 
 typedef struct _CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction {
     pb_size_t which_seat_heater_level;
@@ -136,19 +223,26 @@ typedef struct _CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction {
     } seat_position;
 } CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction;
 
-typedef struct _CarServer_HvacSeatCoolerActions {
-    pb_callback_t hvacSeatCoolerAction;
-} CarServer_HvacSeatCoolerActions;
+typedef struct _CarServer_HvacSeatHeaterActions {
+    pb_size_t hvacSeatHeaterAction_count;
+    CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction hvacSeatHeaterAction[5];
+} CarServer_HvacSeatHeaterActions;
 
 typedef struct _CarServer_HvacSeatCoolerActions_HvacSeatCoolerAction {
     CarServer_HvacSeatCoolerActions_HvacSeatCoolerLevel_E seat_cooler_level;
     CarServer_HvacSeatCoolerActions_HvacSeatCoolerPosition_E seat_position;
 } CarServer_HvacSeatCoolerActions_HvacSeatCoolerAction;
 
+typedef struct _CarServer_HvacSeatCoolerActions {
+    pb_size_t hvacSeatCoolerAction_count;
+    CarServer_HvacSeatCoolerActions_HvacSeatCoolerAction hvacSeatCoolerAction[2];
+} CarServer_HvacSeatCoolerActions;
+
 typedef struct _CarServer_HvacSetPreconditioningMaxAction {
     bool on;
     bool manual_override;
-    pb_callback_t manual_override_mode;
+    pb_size_t manual_override_mode_count;
+    CarServer_HvacSetPreconditioningMaxAction_ManualOverrideMode_E manual_override_mode[3];
 } CarServer_HvacSetPreconditioningMaxAction;
 
 typedef struct _CarServer_HvacSteeringWheelHeaterAction {
@@ -164,17 +258,6 @@ typedef struct _CarServer_HvacTemperatureAdjustmentAction_Temperature {
     } type;
 } CarServer_HvacTemperatureAdjustmentAction_Temperature;
 
-typedef struct _CarServer_HvacTemperatureAdjustmentAction {
-    float delta_celsius;
-    int32_t delta_percent;
-    float absolute_celsius;
-    pb_callback_t hvac_temperature_zone;
-    bool has_level;
-    CarServer_HvacTemperatureAdjustmentAction_Temperature level;
-    float driver_temp_celsius;
-    float passenger_temp_celsius;
-} CarServer_HvacTemperatureAdjustmentAction;
-
 typedef struct _CarServer_HvacTemperatureAdjustmentAction_HvacTemperatureZone {
     pb_size_t which_type;
     union {
@@ -185,40 +268,53 @@ typedef struct _CarServer_HvacTemperatureAdjustmentAction_HvacTemperatureZone {
     } type;
 } CarServer_HvacTemperatureAdjustmentAction_HvacTemperatureZone;
 
+typedef struct _CarServer_HvacTemperatureAdjustmentAction {
+    float delta_celsius;
+    int32_t delta_percent;
+    float absolute_celsius;
+    pb_size_t hvac_temperature_zone_count;
+    CarServer_HvacTemperatureAdjustmentAction_HvacTemperatureZone hvac_temperature_zone[4];
+    bool has_level;
+    CarServer_HvacTemperatureAdjustmentAction_Temperature level;
+    float driver_temp_celsius;
+    float passenger_temp_celsius;
+} CarServer_HvacTemperatureAdjustmentAction;
+
 typedef struct _CarServer_GetNearbyChargingSites {
     bool include_meta_data;
     int32_t radius;
     int32_t count;
 } CarServer_GetNearbyChargingSites;
 
-typedef struct _CarServer_NearbyChargingSites {
-    pb_callback_t superchargers;
-    int64_t congestion_sync_time_utc_secs;
-} CarServer_NearbyChargingSites;
-
 typedef struct _CarServer_Superchargers {
     int64_t id;
-    pb_callback_t amenities;
+    char amenities[64];
     int32_t available_stalls;
-    pb_callback_t billing_info;
-    pb_callback_t billing_time;
-    pb_callback_t city;
-    pb_callback_t country;
+    char billing_info[64];
+    char billing_time[32];
+    char city[32];
+    char country[32];
     float distance_miles;
-    pb_callback_t district;
+    char district[32];
     bool has_location;
     CarServer_LatLong location;
-    pb_callback_t name;
-    pb_callback_t postal_code;
+    char name[64];
+    char postal_code[16];
     bool site_closed;
-    pb_callback_t state;
-    pb_callback_t street_address;
+    char state[32];
+    char street_address[64];
     int32_t total_stalls;
     bool within_range;
     int32_t max_power_kw;
     int32_t out_of_order_stalls_number;
-    pb_callback_t out_of_order_stalls_names;
+    char out_of_order_stalls_names[64];
 } CarServer_Superchargers;
+
+typedef struct _CarServer_NearbyChargingSites {
+    pb_size_t superchargers_count;
+    CarServer_Superchargers superchargers[10];
+    int64_t congestion_sync_time_utc_secs;
+} CarServer_NearbyChargingSites;
 
 typedef struct _CarServer_MediaPlayAction {
     char dummy_field;
@@ -274,7 +370,7 @@ typedef struct _CarServer_VehicleControlSetSentryModeAction {
 
 typedef struct _CarServer_VehicleControlSetValetModeAction {
     bool on;
-    pb_callback_t password;
+    char password[16];
 } CarServer_VehicleControlSetValetModeAction;
 
 typedef struct _CarServer_VehicleControlSunroofOpenCloseAction {
@@ -294,7 +390,7 @@ typedef struct _CarServer_VehicleControlSunroofOpenCloseAction {
 typedef struct _CarServer_VehicleControlTriggerHomelinkAction {
     bool has_location;
     CarServer_LatLong location;
-    pb_callback_t token;
+    char token[64];
 } CarServer_VehicleControlTriggerHomelinkAction;
 
 typedef struct _CarServer_VehicleControlWindowAction {
@@ -311,14 +407,15 @@ typedef struct _CarServer_HvacBioweaponModeAction {
     bool manual_override;
 } CarServer_HvacBioweaponModeAction;
 
-typedef struct _CarServer_AutoSeatClimateAction {
-    pb_callback_t carseat;
-} CarServer_AutoSeatClimateAction;
-
 typedef struct _CarServer_AutoSeatClimateAction_CarSeat {
     bool on;
     CarServer_AutoSeatClimateAction_AutoSeatPosition_E seat_position;
 } CarServer_AutoSeatClimateAction_CarSeat;
+
+typedef struct _CarServer_AutoSeatClimateAction {
+    pb_size_t carseat_count;
+    CarServer_AutoSeatClimateAction_CarSeat carseat[2];
+} CarServer_AutoSeatClimateAction;
 
 typedef struct _CarServer_Ping {
     int32_t ping_id;
@@ -329,6 +426,7 @@ typedef struct _CarServer_Response {
     CarServer_ActionStatus actionStatus;
     pb_size_t which_response_msg;
     union {
+        CarServer_VehicleData vehicleData;
         Signatures_SessionInfo getSessionInfoResponse;
         CarServer_NearbyChargingSites getNearbyChargingSites;
         CarServer_Ping ping;
@@ -359,13 +457,33 @@ typedef struct _CarServer_SetChargingAmpsAction {
     int32_t charging_amps;
 } CarServer_SetChargingAmpsAction;
 
+typedef struct _CarServer_RemoveChargeScheduleAction {
+    uint64_t id; /* datetime in epoch time */
+} CarServer_RemoveChargeScheduleAction;
+
+typedef struct _CarServer_BatchRemoveChargeSchedulesAction {
+    bool home;
+    bool work;
+    bool other; /* Delete non-home and non-work charge schedules */
+} CarServer_BatchRemoveChargeSchedulesAction;
+
+typedef struct _CarServer_BatchRemovePreconditionSchedulesAction {
+    bool home;
+    bool work;
+    bool other; /* Delete non-home and non-work precondition schedules */
+} CarServer_BatchRemovePreconditionSchedulesAction;
+
+typedef struct _CarServer_RemovePreconditionScheduleAction {
+    uint64_t id; /* datetime in epoch time */
+} CarServer_RemovePreconditionScheduleAction;
+
 typedef struct _CarServer_SetCabinOverheatProtectionAction {
     bool on;
     bool fan_only;
 } CarServer_SetCabinOverheatProtectionAction;
 
 typedef struct _CarServer_SetVehicleNameAction {
-    pb_callback_t vehicleName;
+    char vehicleName[32];
 } CarServer_SetVehicleNameAction;
 
 typedef struct _CarServer_ChargePortDoorClose {
@@ -382,16 +500,54 @@ typedef struct _CarServer_SetCopTempAction {
 
 typedef struct _CarServer_VehicleControlSetPinToDriveAction {
     bool on;
-    pb_callback_t password;
+    char password[16];
 } CarServer_VehicleControlSetPinToDriveAction;
 
 typedef struct _CarServer_VehicleControlResetPinToDriveAction {
     char dummy_field;
 } CarServer_VehicleControlResetPinToDriveAction;
 
+typedef struct _CarServer_ParentalControlsClearPinAction {
+    char pin[16];
+} CarServer_ParentalControlsClearPinAction;
+
+typedef struct _CarServer_ParentalControlsClearPinAdminAction {
+    char dummy_field;
+} CarServer_ParentalControlsClearPinAdminAction;
+
+typedef struct _CarServer_ParentalControlsAction {
+    /* If a PIN was set previously, it must be provided whenever this command
+ is used. For example, after parental controls are disabled, re-enabling
+ requires the original PIN. */
+    bool activate;
+    char pin[16];
+} CarServer_ParentalControlsAction;
+
+typedef struct _CarServer_ParentalControlsEnableSettingsAction {
+    CarServer_ParentalControlsEnableSettingsAction_ParentalControlsSetting_E setting;
+    bool enable;
+} CarServer_ParentalControlsEnableSettingsAction;
+
+typedef struct _CarServer_ParentalControlsSetSpeedLimitAction {
+    double limit_mph;
+} CarServer_ParentalControlsSetSpeedLimitAction;
+
+typedef struct _CarServer_VehicleControlResetPinToDriveAdminAction {
+    char dummy_field;
+} CarServer_VehicleControlResetPinToDriveAdminAction;
+
+typedef struct _CarServer_SetLowPowerModeAction {
+    bool low_power_mode;
+} CarServer_SetLowPowerModeAction;
+
+typedef struct _CarServer_SetKeepAccessoryPowerModeAction {
+    bool keep_accessory_power_mode;
+} CarServer_SetKeepAccessoryPowerModeAction;
+
 typedef struct _CarServer_VehicleAction {
     pb_size_t which_vehicle_action_msg;
     union {
+        CarServer_GetVehicleData getVehicleData;
         CarServer_ChargingSetLimitAction chargingSetLimitAction;
         CarServer_ChargingStartStopAction chargingStartStopAction;
         CarServer_DrivingClearSpeedLimitPinAction drivingClearSpeedLimitPinAction;
@@ -436,6 +592,21 @@ typedef struct _CarServer_VehicleAction {
         CarServer_EraseUserDataAction eraseUserDataAction;
         CarServer_VehicleControlSetPinToDriveAction vehicleControlSetPinToDriveAction;
         CarServer_VehicleControlResetPinToDriveAction vehicleControlResetPinToDriveAction;
+        CarServer_DrivingClearSpeedLimitPinAdminAction drivingClearSpeedLimitPinAdminAction;
+        CarServer_VehicleControlResetPinToDriveAdminAction vehicleControlResetPinToDriveAdminAction;
+        CarServer_ChargeSchedule addChargeScheduleAction;
+        CarServer_RemoveChargeScheduleAction removeChargeScheduleAction;
+        CarServer_PreconditionSchedule addPreconditionScheduleAction;
+        CarServer_RemovePreconditionScheduleAction removePreconditionScheduleAction;
+        CarServer_BatchRemovePreconditionSchedulesAction batchRemovePreconditionSchedulesAction;
+        CarServer_BatchRemoveChargeSchedulesAction batchRemoveChargeSchedulesAction;
+        CarServer_ParentalControlsClearPinAction parentalControlsClearPinAction;
+        CarServer_ParentalControlsClearPinAdminAction parentalControlsClearPinAdminAction;
+        CarServer_ParentalControlsAction parentalControlsAction;
+        CarServer_ParentalControlsEnableSettingsAction parentalControlsEnableSettingsAction;
+        CarServer_ParentalControlsSetSpeedLimitAction parentalControlsSetSpeedLimitAction;
+        CarServer_SetLowPowerModeAction setLowPowerModeAction;
+        CarServer_SetKeepAccessoryPowerModeAction setKeepAccessoryPowerModeAction;
     } vehicle_action_msg;
 } CarServer_VehicleAction;
 
@@ -476,11 +647,29 @@ extern "C" {
 #define _CarServer_HvacClimateKeeperAction_ClimateKeeperAction_E_MAX CarServer_HvacClimateKeeperAction_ClimateKeeperAction_E_ClimateKeeperAction_Camp
 #define _CarServer_HvacClimateKeeperAction_ClimateKeeperAction_E_ARRAYSIZE ((CarServer_HvacClimateKeeperAction_ClimateKeeperAction_E)(CarServer_HvacClimateKeeperAction_ClimateKeeperAction_E_ClimateKeeperAction_Camp+1))
 
+#define _CarServer_ParentalControlsEnableSettingsAction_ParentalControlsSetting_E_MIN CarServer_ParentalControlsEnableSettingsAction_ParentalControlsSetting_E_SpeedLimit
+#define _CarServer_ParentalControlsEnableSettingsAction_ParentalControlsSetting_E_MAX CarServer_ParentalControlsEnableSettingsAction_ParentalControlsSetting_E_ArcadeBlocked
+#define _CarServer_ParentalControlsEnableSettingsAction_ParentalControlsSetting_E_ARRAYSIZE ((CarServer_ParentalControlsEnableSettingsAction_ParentalControlsSetting_E)(CarServer_ParentalControlsEnableSettingsAction_ParentalControlsSetting_E_ArcadeBlocked+1))
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 
 #define CarServer_ActionStatus_result_ENUMTYPE CarServer_OperationStatus_E
+
 
 
 
@@ -535,37 +724,64 @@ extern "C" {
 
 
 
+
+
+
+
 #define CarServer_SetCopTempAction_copActivationTemp_ENUMTYPE CarServer_ClimateState_CopActivationTemp
+
+
+
+
+
+
+#define CarServer_ParentalControlsEnableSettingsAction_setting_ENUMTYPE CarServer_ParentalControlsEnableSettingsAction_ParentalControlsSetting_E
+
+
 
 
 
 
 /* Initializer values for message structs */
 #define CarServer_Action_init_default            {0, {CarServer_VehicleAction_init_default}}
-#define CarServer_VehicleAction_init_default     {0, {CarServer_ChargingSetLimitAction_init_default}}
-#define CarServer_EraseUserDataAction_init_default {{{NULL}, NULL}}
-#define CarServer_Response_init_default          {false, CarServer_ActionStatus_init_default, 0, {Signatures_SessionInfo_init_default}}
+#define CarServer_VehicleAction_init_default     {0, {CarServer_GetVehicleData_init_default}}
+#define CarServer_GetVehicleData_init_default    {false, CarServer_GetChargeState_init_default, false, CarServer_GetClimateState_init_default, false, CarServer_GetDriveState_init_default, false, CarServer_GetLocationState_init_default, false, CarServer_GetClosuresState_init_default, false, CarServer_GetChargeScheduleState_init_default, false, CarServer_GetPreconditioningScheduleState_init_default, false, CarServer_GetTirePressureState_init_default, false, CarServer_GetMediaState_init_default, false, CarServer_GetMediaDetailState_init_default, false, CarServer_GetSoftwareUpdateState_init_default, false, CarServer_GetParentalControlsState_init_default}
+#define CarServer_GetTirePressureState_init_default {0}
+#define CarServer_GetMediaState_init_default     {0}
+#define CarServer_GetMediaDetailState_init_default {0}
+#define CarServer_GetSoftwareUpdateState_init_default {0}
+#define CarServer_GetChargeState_init_default    {0}
+#define CarServer_GetClimateState_init_default   {0}
+#define CarServer_GetDriveState_init_default     {0}
+#define CarServer_GetLocationState_init_default  {0}
+#define CarServer_GetClosuresState_init_default  {0}
+#define CarServer_GetChargeScheduleState_init_default {0}
+#define CarServer_GetPreconditioningScheduleState_init_default {0}
+#define CarServer_GetParentalControlsState_init_default {0}
+#define CarServer_EraseUserDataAction_init_default {""}
+#define CarServer_Response_init_default          {false, CarServer_ActionStatus_init_default, 0, {CarServer_VehicleData_init_default}}
 #define CarServer_ActionStatus_init_default      {_CarServer_OperationStatus_E_MIN, false, CarServer_ResultReason_init_default}
 #define CarServer_ResultReason_init_default      {0, {""}}
-#define CarServer_EncryptedData_init_default     {0, {{NULL}, NULL}, {{NULL}, NULL}}
+#define CarServer_EncryptedData_init_default     {0, {0, {0}}, {0, {0}}}
 #define CarServer_ChargingSetLimitAction_init_default {0}
 #define CarServer_ChargingStartStopAction_init_default {0, {CarServer_Void_init_default}}
-#define CarServer_DrivingClearSpeedLimitPinAction_init_default {{{NULL}, NULL}}
+#define CarServer_DrivingClearSpeedLimitPinAction_init_default {""}
+#define CarServer_DrivingClearSpeedLimitPinAdminAction_init_default {0}
 #define CarServer_DrivingSetSpeedLimitAction_init_default {0}
-#define CarServer_DrivingSpeedLimitAction_init_default {0, {{NULL}, NULL}}
+#define CarServer_DrivingSpeedLimitAction_init_default {0, ""}
 #define CarServer_HvacAutoAction_init_default    {0, 0}
-#define CarServer_HvacSeatHeaterActions_init_default {{{NULL}, NULL}}
+#define CarServer_HvacSeatHeaterActions_init_default {0, {CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_init_default, CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_init_default, CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_init_default, CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_init_default, CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_init_default}}
 #define CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_init_default {0, {CarServer_Void_init_default}, 0, {CarServer_Void_init_default}}
-#define CarServer_HvacSeatCoolerActions_init_default {{{NULL}, NULL}}
+#define CarServer_HvacSeatCoolerActions_init_default {0, {CarServer_HvacSeatCoolerActions_HvacSeatCoolerAction_init_default, CarServer_HvacSeatCoolerActions_HvacSeatCoolerAction_init_default}}
 #define CarServer_HvacSeatCoolerActions_HvacSeatCoolerAction_init_default {_CarServer_HvacSeatCoolerActions_HvacSeatCoolerLevel_E_MIN, _CarServer_HvacSeatCoolerActions_HvacSeatCoolerPosition_E_MIN}
-#define CarServer_HvacSetPreconditioningMaxAction_init_default {0, 0, {{NULL}, NULL}}
+#define CarServer_HvacSetPreconditioningMaxAction_init_default {0, 0, 0, {_CarServer_HvacSetPreconditioningMaxAction_ManualOverrideMode_E_MIN, _CarServer_HvacSetPreconditioningMaxAction_ManualOverrideMode_E_MIN, _CarServer_HvacSetPreconditioningMaxAction_ManualOverrideMode_E_MIN}}
 #define CarServer_HvacSteeringWheelHeaterAction_init_default {0}
-#define CarServer_HvacTemperatureAdjustmentAction_init_default {0, 0, 0, {{NULL}, NULL}, false, CarServer_HvacTemperatureAdjustmentAction_Temperature_init_default, 0, 0}
+#define CarServer_HvacTemperatureAdjustmentAction_init_default {0, 0, 0, 0, {CarServer_HvacTemperatureAdjustmentAction_HvacTemperatureZone_init_default, CarServer_HvacTemperatureAdjustmentAction_HvacTemperatureZone_init_default, CarServer_HvacTemperatureAdjustmentAction_HvacTemperatureZone_init_default, CarServer_HvacTemperatureAdjustmentAction_HvacTemperatureZone_init_default}, false, CarServer_HvacTemperatureAdjustmentAction_Temperature_init_default, 0, 0}
 #define CarServer_HvacTemperatureAdjustmentAction_Temperature_init_default {0, {CarServer_Void_init_default}}
 #define CarServer_HvacTemperatureAdjustmentAction_HvacTemperatureZone_init_default {0, {CarServer_Void_init_default}}
 #define CarServer_GetNearbyChargingSites_init_default {0, 0, 0}
-#define CarServer_NearbyChargingSites_init_default {{{NULL}, NULL}, 0}
-#define CarServer_Superchargers_init_default     {0, {{NULL}, NULL}, 0, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}, 0, {{NULL}, NULL}, false, CarServer_LatLong_init_default, {{NULL}, NULL}, {{NULL}, NULL}, 0, {{NULL}, NULL}, {{NULL}, NULL}, 0, 0, 0, 0, {{NULL}, NULL}}
+#define CarServer_NearbyChargingSites_init_default {0, {CarServer_Superchargers_init_default, CarServer_Superchargers_init_default, CarServer_Superchargers_init_default, CarServer_Superchargers_init_default, CarServer_Superchargers_init_default, CarServer_Superchargers_init_default, CarServer_Superchargers_init_default, CarServer_Superchargers_init_default, CarServer_Superchargers_init_default, CarServer_Superchargers_init_default}, 0}
+#define CarServer_Superchargers_init_default     {0, "", 0, "", "", "", "", 0, "", false, CarServer_LatLong_init_default, "", "", 0, "", "", 0, 0, 0, 0, ""}
 #define CarServer_MediaPlayAction_init_default   {0}
 #define CarServer_MediaUpdateVolume_init_default {0, {0}}
 #define CarServer_MediaNextFavorite_init_default {0}
@@ -578,50 +794,76 @@ extern "C" {
 #define CarServer_VehicleControlResetValetPinAction_init_default {0}
 #define CarServer_VehicleControlScheduleSoftwareUpdateAction_init_default {0}
 #define CarServer_VehicleControlSetSentryModeAction_init_default {0}
-#define CarServer_VehicleControlSetValetModeAction_init_default {0, {{NULL}, NULL}}
+#define CarServer_VehicleControlSetValetModeAction_init_default {0, ""}
 #define CarServer_VehicleControlSunroofOpenCloseAction_init_default {0, {0}, 0, {CarServer_Void_init_default}}
-#define CarServer_VehicleControlTriggerHomelinkAction_init_default {false, CarServer_LatLong_init_default, {{NULL}, NULL}}
+#define CarServer_VehicleControlTriggerHomelinkAction_init_default {false, CarServer_LatLong_init_default, ""}
 #define CarServer_VehicleControlWindowAction_init_default {0, {CarServer_Void_init_default}}
 #define CarServer_HvacBioweaponModeAction_init_default {0, 0}
-#define CarServer_AutoSeatClimateAction_init_default {{{NULL}, NULL}}
+#define CarServer_AutoSeatClimateAction_init_default {0, {CarServer_AutoSeatClimateAction_CarSeat_init_default, CarServer_AutoSeatClimateAction_CarSeat_init_default}}
 #define CarServer_AutoSeatClimateAction_CarSeat_init_default {0, _CarServer_AutoSeatClimateAction_AutoSeatPosition_E_MIN}
 #define CarServer_Ping_init_default              {0}
 #define CarServer_ScheduledChargingAction_init_default {0, 0}
 #define CarServer_ScheduledDepartureAction_init_default {0, 0, false, CarServer_PreconditioningTimes_init_default, false, CarServer_OffPeakChargingTimes_init_default, 0}
 #define CarServer_HvacClimateKeeperAction_init_default {_CarServer_HvacClimateKeeperAction_ClimateKeeperAction_E_MIN, 0}
 #define CarServer_SetChargingAmpsAction_init_default {0}
+#define CarServer_RemoveChargeScheduleAction_init_default {0}
+#define CarServer_BatchRemoveChargeSchedulesAction_init_default {0, 0, 0}
+#define CarServer_BatchRemovePreconditionSchedulesAction_init_default {0, 0, 0}
+#define CarServer_RemovePreconditionScheduleAction_init_default {0}
 #define CarServer_SetCabinOverheatProtectionAction_init_default {0, 0}
-#define CarServer_SetVehicleNameAction_init_default {{{NULL}, NULL}}
+#define CarServer_SetVehicleNameAction_init_default {""}
 #define CarServer_ChargePortDoorClose_init_default {0}
 #define CarServer_ChargePortDoorOpen_init_default {0}
 #define CarServer_SetCopTempAction_init_default  {_CarServer_ClimateState_CopActivationTemp_MIN}
-#define CarServer_VehicleControlSetPinToDriveAction_init_default {0, {{NULL}, NULL}}
+#define CarServer_VehicleControlSetPinToDriveAction_init_default {0, ""}
 #define CarServer_VehicleControlResetPinToDriveAction_init_default {0}
+#define CarServer_ParentalControlsClearPinAction_init_default {""}
+#define CarServer_ParentalControlsClearPinAdminAction_init_default {0}
+#define CarServer_ParentalControlsAction_init_default {0, ""}
+#define CarServer_ParentalControlsEnableSettingsAction_init_default {_CarServer_ParentalControlsEnableSettingsAction_ParentalControlsSetting_E_MIN, 0}
+#define CarServer_ParentalControlsSetSpeedLimitAction_init_default {0}
+#define CarServer_VehicleControlResetPinToDriveAdminAction_init_default {0}
+#define CarServer_SetLowPowerModeAction_init_default {0}
+#define CarServer_SetKeepAccessoryPowerModeAction_init_default {0}
 #define CarServer_Action_init_zero               {0, {CarServer_VehicleAction_init_zero}}
-#define CarServer_VehicleAction_init_zero        {0, {CarServer_ChargingSetLimitAction_init_zero}}
-#define CarServer_EraseUserDataAction_init_zero  {{{NULL}, NULL}}
-#define CarServer_Response_init_zero             {false, CarServer_ActionStatus_init_zero, 0, {Signatures_SessionInfo_init_zero}}
+#define CarServer_VehicleAction_init_zero        {0, {CarServer_GetVehicleData_init_zero}}
+#define CarServer_GetVehicleData_init_zero       {false, CarServer_GetChargeState_init_zero, false, CarServer_GetClimateState_init_zero, false, CarServer_GetDriveState_init_zero, false, CarServer_GetLocationState_init_zero, false, CarServer_GetClosuresState_init_zero, false, CarServer_GetChargeScheduleState_init_zero, false, CarServer_GetPreconditioningScheduleState_init_zero, false, CarServer_GetTirePressureState_init_zero, false, CarServer_GetMediaState_init_zero, false, CarServer_GetMediaDetailState_init_zero, false, CarServer_GetSoftwareUpdateState_init_zero, false, CarServer_GetParentalControlsState_init_zero}
+#define CarServer_GetTirePressureState_init_zero {0}
+#define CarServer_GetMediaState_init_zero        {0}
+#define CarServer_GetMediaDetailState_init_zero  {0}
+#define CarServer_GetSoftwareUpdateState_init_zero {0}
+#define CarServer_GetChargeState_init_zero       {0}
+#define CarServer_GetClimateState_init_zero      {0}
+#define CarServer_GetDriveState_init_zero        {0}
+#define CarServer_GetLocationState_init_zero     {0}
+#define CarServer_GetClosuresState_init_zero     {0}
+#define CarServer_GetChargeScheduleState_init_zero {0}
+#define CarServer_GetPreconditioningScheduleState_init_zero {0}
+#define CarServer_GetParentalControlsState_init_zero {0}
+#define CarServer_EraseUserDataAction_init_zero  {""}
+#define CarServer_Response_init_zero             {false, CarServer_ActionStatus_init_zero, 0, {CarServer_VehicleData_init_zero}}
 #define CarServer_ActionStatus_init_zero         {_CarServer_OperationStatus_E_MIN, false, CarServer_ResultReason_init_zero}
 #define CarServer_ResultReason_init_zero         {0, {""}}
-#define CarServer_EncryptedData_init_zero        {0, {{NULL}, NULL}, {{NULL}, NULL}}
+#define CarServer_EncryptedData_init_zero        {0, {0, {0}}, {0, {0}}}
 #define CarServer_ChargingSetLimitAction_init_zero {0}
 #define CarServer_ChargingStartStopAction_init_zero {0, {CarServer_Void_init_zero}}
-#define CarServer_DrivingClearSpeedLimitPinAction_init_zero {{{NULL}, NULL}}
+#define CarServer_DrivingClearSpeedLimitPinAction_init_zero {""}
+#define CarServer_DrivingClearSpeedLimitPinAdminAction_init_zero {0}
 #define CarServer_DrivingSetSpeedLimitAction_init_zero {0}
-#define CarServer_DrivingSpeedLimitAction_init_zero {0, {{NULL}, NULL}}
+#define CarServer_DrivingSpeedLimitAction_init_zero {0, ""}
 #define CarServer_HvacAutoAction_init_zero       {0, 0}
-#define CarServer_HvacSeatHeaterActions_init_zero {{{NULL}, NULL}}
+#define CarServer_HvacSeatHeaterActions_init_zero {0, {CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_init_zero, CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_init_zero, CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_init_zero, CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_init_zero, CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_init_zero}}
 #define CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_init_zero {0, {CarServer_Void_init_zero}, 0, {CarServer_Void_init_zero}}
-#define CarServer_HvacSeatCoolerActions_init_zero {{{NULL}, NULL}}
+#define CarServer_HvacSeatCoolerActions_init_zero {0, {CarServer_HvacSeatCoolerActions_HvacSeatCoolerAction_init_zero, CarServer_HvacSeatCoolerActions_HvacSeatCoolerAction_init_zero}}
 #define CarServer_HvacSeatCoolerActions_HvacSeatCoolerAction_init_zero {_CarServer_HvacSeatCoolerActions_HvacSeatCoolerLevel_E_MIN, _CarServer_HvacSeatCoolerActions_HvacSeatCoolerPosition_E_MIN}
-#define CarServer_HvacSetPreconditioningMaxAction_init_zero {0, 0, {{NULL}, NULL}}
+#define CarServer_HvacSetPreconditioningMaxAction_init_zero {0, 0, 0, {_CarServer_HvacSetPreconditioningMaxAction_ManualOverrideMode_E_MIN, _CarServer_HvacSetPreconditioningMaxAction_ManualOverrideMode_E_MIN, _CarServer_HvacSetPreconditioningMaxAction_ManualOverrideMode_E_MIN}}
 #define CarServer_HvacSteeringWheelHeaterAction_init_zero {0}
-#define CarServer_HvacTemperatureAdjustmentAction_init_zero {0, 0, 0, {{NULL}, NULL}, false, CarServer_HvacTemperatureAdjustmentAction_Temperature_init_zero, 0, 0}
+#define CarServer_HvacTemperatureAdjustmentAction_init_zero {0, 0, 0, 0, {CarServer_HvacTemperatureAdjustmentAction_HvacTemperatureZone_init_zero, CarServer_HvacTemperatureAdjustmentAction_HvacTemperatureZone_init_zero, CarServer_HvacTemperatureAdjustmentAction_HvacTemperatureZone_init_zero, CarServer_HvacTemperatureAdjustmentAction_HvacTemperatureZone_init_zero}, false, CarServer_HvacTemperatureAdjustmentAction_Temperature_init_zero, 0, 0}
 #define CarServer_HvacTemperatureAdjustmentAction_Temperature_init_zero {0, {CarServer_Void_init_zero}}
 #define CarServer_HvacTemperatureAdjustmentAction_HvacTemperatureZone_init_zero {0, {CarServer_Void_init_zero}}
 #define CarServer_GetNearbyChargingSites_init_zero {0, 0, 0}
-#define CarServer_NearbyChargingSites_init_zero  {{{NULL}, NULL}, 0}
-#define CarServer_Superchargers_init_zero        {0, {{NULL}, NULL}, 0, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}, {{NULL}, NULL}, 0, {{NULL}, NULL}, false, CarServer_LatLong_init_zero, {{NULL}, NULL}, {{NULL}, NULL}, 0, {{NULL}, NULL}, {{NULL}, NULL}, 0, 0, 0, 0, {{NULL}, NULL}}
+#define CarServer_NearbyChargingSites_init_zero  {0, {CarServer_Superchargers_init_zero, CarServer_Superchargers_init_zero, CarServer_Superchargers_init_zero, CarServer_Superchargers_init_zero, CarServer_Superchargers_init_zero, CarServer_Superchargers_init_zero, CarServer_Superchargers_init_zero, CarServer_Superchargers_init_zero, CarServer_Superchargers_init_zero, CarServer_Superchargers_init_zero}, 0}
+#define CarServer_Superchargers_init_zero        {0, "", 0, "", "", "", "", 0, "", false, CarServer_LatLong_init_zero, "", "", 0, "", "", 0, 0, 0, 0, ""}
 #define CarServer_MediaPlayAction_init_zero      {0}
 #define CarServer_MediaUpdateVolume_init_zero    {0, {0}}
 #define CarServer_MediaNextFavorite_init_zero    {0}
@@ -634,27 +876,51 @@ extern "C" {
 #define CarServer_VehicleControlResetValetPinAction_init_zero {0}
 #define CarServer_VehicleControlScheduleSoftwareUpdateAction_init_zero {0}
 #define CarServer_VehicleControlSetSentryModeAction_init_zero {0}
-#define CarServer_VehicleControlSetValetModeAction_init_zero {0, {{NULL}, NULL}}
+#define CarServer_VehicleControlSetValetModeAction_init_zero {0, ""}
 #define CarServer_VehicleControlSunroofOpenCloseAction_init_zero {0, {0}, 0, {CarServer_Void_init_zero}}
-#define CarServer_VehicleControlTriggerHomelinkAction_init_zero {false, CarServer_LatLong_init_zero, {{NULL}, NULL}}
+#define CarServer_VehicleControlTriggerHomelinkAction_init_zero {false, CarServer_LatLong_init_zero, ""}
 #define CarServer_VehicleControlWindowAction_init_zero {0, {CarServer_Void_init_zero}}
 #define CarServer_HvacBioweaponModeAction_init_zero {0, 0}
-#define CarServer_AutoSeatClimateAction_init_zero {{{NULL}, NULL}}
+#define CarServer_AutoSeatClimateAction_init_zero {0, {CarServer_AutoSeatClimateAction_CarSeat_init_zero, CarServer_AutoSeatClimateAction_CarSeat_init_zero}}
 #define CarServer_AutoSeatClimateAction_CarSeat_init_zero {0, _CarServer_AutoSeatClimateAction_AutoSeatPosition_E_MIN}
 #define CarServer_Ping_init_zero                 {0}
 #define CarServer_ScheduledChargingAction_init_zero {0, 0}
 #define CarServer_ScheduledDepartureAction_init_zero {0, 0, false, CarServer_PreconditioningTimes_init_zero, false, CarServer_OffPeakChargingTimes_init_zero, 0}
 #define CarServer_HvacClimateKeeperAction_init_zero {_CarServer_HvacClimateKeeperAction_ClimateKeeperAction_E_MIN, 0}
 #define CarServer_SetChargingAmpsAction_init_zero {0}
+#define CarServer_RemoveChargeScheduleAction_init_zero {0}
+#define CarServer_BatchRemoveChargeSchedulesAction_init_zero {0, 0, 0}
+#define CarServer_BatchRemovePreconditionSchedulesAction_init_zero {0, 0, 0}
+#define CarServer_RemovePreconditionScheduleAction_init_zero {0}
 #define CarServer_SetCabinOverheatProtectionAction_init_zero {0, 0}
-#define CarServer_SetVehicleNameAction_init_zero {{{NULL}, NULL}}
+#define CarServer_SetVehicleNameAction_init_zero {""}
 #define CarServer_ChargePortDoorClose_init_zero  {0}
 #define CarServer_ChargePortDoorOpen_init_zero   {0}
 #define CarServer_SetCopTempAction_init_zero     {_CarServer_ClimateState_CopActivationTemp_MIN}
-#define CarServer_VehicleControlSetPinToDriveAction_init_zero {0, {{NULL}, NULL}}
+#define CarServer_VehicleControlSetPinToDriveAction_init_zero {0, ""}
 #define CarServer_VehicleControlResetPinToDriveAction_init_zero {0}
+#define CarServer_ParentalControlsClearPinAction_init_zero {""}
+#define CarServer_ParentalControlsClearPinAdminAction_init_zero {0}
+#define CarServer_ParentalControlsAction_init_zero {0, ""}
+#define CarServer_ParentalControlsEnableSettingsAction_init_zero {_CarServer_ParentalControlsEnableSettingsAction_ParentalControlsSetting_E_MIN, 0}
+#define CarServer_ParentalControlsSetSpeedLimitAction_init_zero {0}
+#define CarServer_VehicleControlResetPinToDriveAdminAction_init_zero {0}
+#define CarServer_SetLowPowerModeAction_init_zero {0}
+#define CarServer_SetKeepAccessoryPowerModeAction_init_zero {0}
 
 /* Field tags (for use in manual encoding/decoding) */
+#define CarServer_GetVehicleData_getChargeState_tag 2
+#define CarServer_GetVehicleData_getClimateState_tag 3
+#define CarServer_GetVehicleData_getDriveState_tag 4
+#define CarServer_GetVehicleData_getLocationState_tag 7
+#define CarServer_GetVehicleData_getClosuresState_tag 8
+#define CarServer_GetVehicleData_getChargeScheduleState_tag 10
+#define CarServer_GetVehicleData_getPreconditioningScheduleState_tag 11
+#define CarServer_GetVehicleData_getTirePressureState_tag 14
+#define CarServer_GetVehicleData_getMediaState_tag 15
+#define CarServer_GetVehicleData_getMediaDetailState_tag 16
+#define CarServer_GetVehicleData_getSoftwareUpdateState_tag 17
+#define CarServer_GetVehicleData_getParentalControlsState_tag 19
 #define CarServer_EraseUserDataAction_reason_tag 1
 #define CarServer_ResultReason_plain_text_tag    1
 #define CarServer_ActionStatus_result_tag        1
@@ -674,7 +940,6 @@ extern "C" {
 #define CarServer_DrivingSpeedLimitAction_pin_tag 2
 #define CarServer_HvacAutoAction_power_on_tag    1
 #define CarServer_HvacAutoAction_manual_override_tag 2
-#define CarServer_HvacSeatHeaterActions_hvacSeatHeaterAction_tag 1
 #define CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_SEAT_HEATER_UNKNOWN_tag 1
 #define CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_SEAT_HEATER_OFF_tag 2
 #define CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_SEAT_HEATER_LOW_tag 3
@@ -690,9 +955,10 @@ extern "C" {
 #define CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_CAR_SEAT_REAR_RIGHT_BACK_tag 13
 #define CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_CAR_SEAT_THIRD_ROW_LEFT_tag 14
 #define CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_CAR_SEAT_THIRD_ROW_RIGHT_tag 15
-#define CarServer_HvacSeatCoolerActions_hvacSeatCoolerAction_tag 1
+#define CarServer_HvacSeatHeaterActions_hvacSeatHeaterAction_tag 1
 #define CarServer_HvacSeatCoolerActions_HvacSeatCoolerAction_seat_cooler_level_tag 1
 #define CarServer_HvacSeatCoolerActions_HvacSeatCoolerAction_seat_position_tag 2
+#define CarServer_HvacSeatCoolerActions_hvacSeatCoolerAction_tag 1
 #define CarServer_HvacSetPreconditioningMaxAction_on_tag 1
 #define CarServer_HvacSetPreconditioningMaxAction_manual_override_tag 2
 #define CarServer_HvacSetPreconditioningMaxAction_manual_override_mode_tag 3
@@ -700,6 +966,10 @@ extern "C" {
 #define CarServer_HvacTemperatureAdjustmentAction_Temperature_TEMP_UNKNOWN_tag 1
 #define CarServer_HvacTemperatureAdjustmentAction_Temperature_TEMP_MIN_tag 2
 #define CarServer_HvacTemperatureAdjustmentAction_Temperature_TEMP_MAX_tag 3
+#define CarServer_HvacTemperatureAdjustmentAction_HvacTemperatureZone_TEMP_ZONE_UNKNOWN_tag 1
+#define CarServer_HvacTemperatureAdjustmentAction_HvacTemperatureZone_TEMP_ZONE_FRONT_LEFT_tag 2
+#define CarServer_HvacTemperatureAdjustmentAction_HvacTemperatureZone_TEMP_ZONE_FRONT_RIGHT_tag 3
+#define CarServer_HvacTemperatureAdjustmentAction_HvacTemperatureZone_TEMP_ZONE_REAR_tag 4
 #define CarServer_HvacTemperatureAdjustmentAction_delta_celsius_tag 1
 #define CarServer_HvacTemperatureAdjustmentAction_delta_percent_tag 2
 #define CarServer_HvacTemperatureAdjustmentAction_absolute_celsius_tag 3
@@ -707,15 +977,9 @@ extern "C" {
 #define CarServer_HvacTemperatureAdjustmentAction_level_tag 5
 #define CarServer_HvacTemperatureAdjustmentAction_driver_temp_celsius_tag 6
 #define CarServer_HvacTemperatureAdjustmentAction_passenger_temp_celsius_tag 7
-#define CarServer_HvacTemperatureAdjustmentAction_HvacTemperatureZone_TEMP_ZONE_UNKNOWN_tag 1
-#define CarServer_HvacTemperatureAdjustmentAction_HvacTemperatureZone_TEMP_ZONE_FRONT_LEFT_tag 2
-#define CarServer_HvacTemperatureAdjustmentAction_HvacTemperatureZone_TEMP_ZONE_FRONT_RIGHT_tag 3
-#define CarServer_HvacTemperatureAdjustmentAction_HvacTemperatureZone_TEMP_ZONE_REAR_tag 4
 #define CarServer_GetNearbyChargingSites_include_meta_data_tag 1
 #define CarServer_GetNearbyChargingSites_radius_tag 2
 #define CarServer_GetNearbyChargingSites_count_tag 3
-#define CarServer_NearbyChargingSites_superchargers_tag 3
-#define CarServer_NearbyChargingSites_congestion_sync_time_utc_secs_tag 4
 #define CarServer_Superchargers_id_tag           1
 #define CarServer_Superchargers_amenities_tag    2
 #define CarServer_Superchargers_available_stalls_tag 3
@@ -736,6 +1000,8 @@ extern "C" {
 #define CarServer_Superchargers_max_power_kw_tag 18
 #define CarServer_Superchargers_out_of_order_stalls_number_tag 19
 #define CarServer_Superchargers_out_of_order_stalls_names_tag 20
+#define CarServer_NearbyChargingSites_superchargers_tag 3
+#define CarServer_NearbyChargingSites_congestion_sync_time_utc_secs_tag 4
 #define CarServer_MediaUpdateVolume_volume_delta_tag 1
 #define CarServer_MediaUpdateVolume_volume_absolute_float_tag 3
 #define CarServer_VehicleControlScheduleSoftwareUpdateAction_offset_sec_tag 1
@@ -754,11 +1020,12 @@ extern "C" {
 #define CarServer_VehicleControlWindowAction_close_tag 4
 #define CarServer_HvacBioweaponModeAction_on_tag 1
 #define CarServer_HvacBioweaponModeAction_manual_override_tag 2
-#define CarServer_AutoSeatClimateAction_carseat_tag 1
 #define CarServer_AutoSeatClimateAction_CarSeat_on_tag 1
 #define CarServer_AutoSeatClimateAction_CarSeat_seat_position_tag 2
+#define CarServer_AutoSeatClimateAction_carseat_tag 1
 #define CarServer_Ping_ping_id_tag               1
 #define CarServer_Response_actionStatus_tag      1
+#define CarServer_Response_vehicleData_tag       2
 #define CarServer_Response_getSessionInfoResponse_tag 3
 #define CarServer_Response_getNearbyChargingSites_tag 5
 #define CarServer_Response_ping_tag              9
@@ -772,12 +1039,29 @@ extern "C" {
 #define CarServer_HvacClimateKeeperAction_ClimateKeeperAction_tag 1
 #define CarServer_HvacClimateKeeperAction_manual_override_tag 2
 #define CarServer_SetChargingAmpsAction_charging_amps_tag 1
+#define CarServer_RemoveChargeScheduleAction_id_tag 1
+#define CarServer_BatchRemoveChargeSchedulesAction_home_tag 1
+#define CarServer_BatchRemoveChargeSchedulesAction_work_tag 2
+#define CarServer_BatchRemoveChargeSchedulesAction_other_tag 3
+#define CarServer_BatchRemovePreconditionSchedulesAction_home_tag 1
+#define CarServer_BatchRemovePreconditionSchedulesAction_work_tag 2
+#define CarServer_BatchRemovePreconditionSchedulesAction_other_tag 3
+#define CarServer_RemovePreconditionScheduleAction_id_tag 1
 #define CarServer_SetCabinOverheatProtectionAction_on_tag 1
 #define CarServer_SetCabinOverheatProtectionAction_fan_only_tag 2
 #define CarServer_SetVehicleNameAction_vehicleName_tag 1
 #define CarServer_SetCopTempAction_copActivationTemp_tag 1
 #define CarServer_VehicleControlSetPinToDriveAction_on_tag 1
 #define CarServer_VehicleControlSetPinToDriveAction_password_tag 2
+#define CarServer_ParentalControlsClearPinAction_pin_tag 1
+#define CarServer_ParentalControlsAction_activate_tag 1
+#define CarServer_ParentalControlsAction_pin_tag 2
+#define CarServer_ParentalControlsEnableSettingsAction_setting_tag 1
+#define CarServer_ParentalControlsEnableSettingsAction_enable_tag 2
+#define CarServer_ParentalControlsSetSpeedLimitAction_limit_mph_tag 1
+#define CarServer_SetLowPowerModeAction_low_power_mode_tag 1
+#define CarServer_SetKeepAccessoryPowerModeAction_keep_accessory_power_mode_tag 1
+#define CarServer_VehicleAction_getVehicleData_tag 1
 #define CarServer_VehicleAction_chargingSetLimitAction_tag 5
 #define CarServer_VehicleAction_chargingStartStopAction_tag 6
 #define CarServer_VehicleAction_drivingClearSpeedLimitPinAction_tag 7
@@ -822,6 +1106,21 @@ extern "C" {
 #define CarServer_VehicleAction_eraseUserDataAction_tag 72
 #define CarServer_VehicleAction_vehicleControlSetPinToDriveAction_tag 77
 #define CarServer_VehicleAction_vehicleControlResetPinToDriveAction_tag 78
+#define CarServer_VehicleAction_drivingClearSpeedLimitPinAdminAction_tag 79
+#define CarServer_VehicleAction_vehicleControlResetPinToDriveAdminAction_tag 89
+#define CarServer_VehicleAction_addChargeScheduleAction_tag 97
+#define CarServer_VehicleAction_removeChargeScheduleAction_tag 98
+#define CarServer_VehicleAction_addPreconditionScheduleAction_tag 99
+#define CarServer_VehicleAction_removePreconditionScheduleAction_tag 100
+#define CarServer_VehicleAction_batchRemovePreconditionSchedulesAction_tag 107
+#define CarServer_VehicleAction_batchRemoveChargeSchedulesAction_tag 108
+#define CarServer_VehicleAction_parentalControlsClearPinAction_tag 109
+#define CarServer_VehicleAction_parentalControlsClearPinAdminAction_tag 110
+#define CarServer_VehicleAction_parentalControlsAction_tag 111
+#define CarServer_VehicleAction_parentalControlsEnableSettingsAction_tag 112
+#define CarServer_VehicleAction_parentalControlsSetSpeedLimitAction_tag 113
+#define CarServer_VehicleAction_setLowPowerModeAction_tag 130
+#define CarServer_VehicleAction_setKeepAccessoryPowerModeAction_tag 138
 #define CarServer_Action_vehicleAction_tag       2
 
 /* Struct field encoding specification for nanopb */
@@ -832,6 +1131,7 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (action_msg,vehicleAction,action_msg.vehicleA
 #define CarServer_Action_action_msg_vehicleAction_MSGTYPE CarServer_VehicleAction
 
 #define CarServer_VehicleAction_FIELDLIST(X, a) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (vehicle_action_msg,getVehicleData,vehicle_action_msg.getVehicleData),   1) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (vehicle_action_msg,chargingSetLimitAction,vehicle_action_msg.chargingSetLimitAction),   5) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (vehicle_action_msg,chargingStartStopAction,vehicle_action_msg.chargingStartStopAction),   6) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (vehicle_action_msg,drivingClearSpeedLimitPinAction,vehicle_action_msg.drivingClearSpeedLimitPinAction),   7) \
@@ -875,9 +1175,25 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (vehicle_action_msg,guestModeAction,vehicle_a
 X(a, STATIC,   ONEOF,    MESSAGE,  (vehicle_action_msg,setCopTempAction,vehicle_action_msg.setCopTempAction),  66) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (vehicle_action_msg,eraseUserDataAction,vehicle_action_msg.eraseUserDataAction),  72) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (vehicle_action_msg,vehicleControlSetPinToDriveAction,vehicle_action_msg.vehicleControlSetPinToDriveAction),  77) \
-X(a, STATIC,   ONEOF,    MESSAGE,  (vehicle_action_msg,vehicleControlResetPinToDriveAction,vehicle_action_msg.vehicleControlResetPinToDriveAction),  78)
+X(a, STATIC,   ONEOF,    MESSAGE,  (vehicle_action_msg,vehicleControlResetPinToDriveAction,vehicle_action_msg.vehicleControlResetPinToDriveAction),  78) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (vehicle_action_msg,drivingClearSpeedLimitPinAdminAction,vehicle_action_msg.drivingClearSpeedLimitPinAdminAction),  79) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (vehicle_action_msg,vehicleControlResetPinToDriveAdminAction,vehicle_action_msg.vehicleControlResetPinToDriveAdminAction),  89) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (vehicle_action_msg,addChargeScheduleAction,vehicle_action_msg.addChargeScheduleAction),  97) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (vehicle_action_msg,removeChargeScheduleAction,vehicle_action_msg.removeChargeScheduleAction),  98) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (vehicle_action_msg,addPreconditionScheduleAction,vehicle_action_msg.addPreconditionScheduleAction),  99) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (vehicle_action_msg,removePreconditionScheduleAction,vehicle_action_msg.removePreconditionScheduleAction), 100) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (vehicle_action_msg,batchRemovePreconditionSchedulesAction,vehicle_action_msg.batchRemovePreconditionSchedulesAction), 107) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (vehicle_action_msg,batchRemoveChargeSchedulesAction,vehicle_action_msg.batchRemoveChargeSchedulesAction), 108) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (vehicle_action_msg,parentalControlsClearPinAction,vehicle_action_msg.parentalControlsClearPinAction), 109) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (vehicle_action_msg,parentalControlsClearPinAdminAction,vehicle_action_msg.parentalControlsClearPinAdminAction), 110) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (vehicle_action_msg,parentalControlsAction,vehicle_action_msg.parentalControlsAction), 111) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (vehicle_action_msg,parentalControlsEnableSettingsAction,vehicle_action_msg.parentalControlsEnableSettingsAction), 112) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (vehicle_action_msg,parentalControlsSetSpeedLimitAction,vehicle_action_msg.parentalControlsSetSpeedLimitAction), 113) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (vehicle_action_msg,setLowPowerModeAction,vehicle_action_msg.setLowPowerModeAction), 130) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (vehicle_action_msg,setKeepAccessoryPowerModeAction,vehicle_action_msg.setKeepAccessoryPowerModeAction), 138)
 #define CarServer_VehicleAction_CALLBACK NULL
 #define CarServer_VehicleAction_DEFAULT NULL
+#define CarServer_VehicleAction_vehicle_action_msg_getVehicleData_MSGTYPE CarServer_GetVehicleData
 #define CarServer_VehicleAction_vehicle_action_msg_chargingSetLimitAction_MSGTYPE CarServer_ChargingSetLimitAction
 #define CarServer_VehicleAction_vehicle_action_msg_chargingStartStopAction_MSGTYPE CarServer_ChargingStartStopAction
 #define CarServer_VehicleAction_vehicle_action_msg_drivingClearSpeedLimitPinAction_MSGTYPE CarServer_DrivingClearSpeedLimitPinAction
@@ -922,20 +1238,125 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (vehicle_action_msg,vehicleControlResetPinToD
 #define CarServer_VehicleAction_vehicle_action_msg_eraseUserDataAction_MSGTYPE CarServer_EraseUserDataAction
 #define CarServer_VehicleAction_vehicle_action_msg_vehicleControlSetPinToDriveAction_MSGTYPE CarServer_VehicleControlSetPinToDriveAction
 #define CarServer_VehicleAction_vehicle_action_msg_vehicleControlResetPinToDriveAction_MSGTYPE CarServer_VehicleControlResetPinToDriveAction
+#define CarServer_VehicleAction_vehicle_action_msg_drivingClearSpeedLimitPinAdminAction_MSGTYPE CarServer_DrivingClearSpeedLimitPinAdminAction
+#define CarServer_VehicleAction_vehicle_action_msg_vehicleControlResetPinToDriveAdminAction_MSGTYPE CarServer_VehicleControlResetPinToDriveAdminAction
+#define CarServer_VehicleAction_vehicle_action_msg_addChargeScheduleAction_MSGTYPE CarServer_ChargeSchedule
+#define CarServer_VehicleAction_vehicle_action_msg_removeChargeScheduleAction_MSGTYPE CarServer_RemoveChargeScheduleAction
+#define CarServer_VehicleAction_vehicle_action_msg_addPreconditionScheduleAction_MSGTYPE CarServer_PreconditionSchedule
+#define CarServer_VehicleAction_vehicle_action_msg_removePreconditionScheduleAction_MSGTYPE CarServer_RemovePreconditionScheduleAction
+#define CarServer_VehicleAction_vehicle_action_msg_batchRemovePreconditionSchedulesAction_MSGTYPE CarServer_BatchRemovePreconditionSchedulesAction
+#define CarServer_VehicleAction_vehicle_action_msg_batchRemoveChargeSchedulesAction_MSGTYPE CarServer_BatchRemoveChargeSchedulesAction
+#define CarServer_VehicleAction_vehicle_action_msg_parentalControlsClearPinAction_MSGTYPE CarServer_ParentalControlsClearPinAction
+#define CarServer_VehicleAction_vehicle_action_msg_parentalControlsClearPinAdminAction_MSGTYPE CarServer_ParentalControlsClearPinAdminAction
+#define CarServer_VehicleAction_vehicle_action_msg_parentalControlsAction_MSGTYPE CarServer_ParentalControlsAction
+#define CarServer_VehicleAction_vehicle_action_msg_parentalControlsEnableSettingsAction_MSGTYPE CarServer_ParentalControlsEnableSettingsAction
+#define CarServer_VehicleAction_vehicle_action_msg_parentalControlsSetSpeedLimitAction_MSGTYPE CarServer_ParentalControlsSetSpeedLimitAction
+#define CarServer_VehicleAction_vehicle_action_msg_setLowPowerModeAction_MSGTYPE CarServer_SetLowPowerModeAction
+#define CarServer_VehicleAction_vehicle_action_msg_setKeepAccessoryPowerModeAction_MSGTYPE CarServer_SetKeepAccessoryPowerModeAction
+
+#define CarServer_GetVehicleData_FIELDLIST(X, a) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  getChargeState,    2) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  getClimateState,   3) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  getDriveState,     4) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  getLocationState,   7) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  getClosuresState,   8) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  getChargeScheduleState,  10) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  getPreconditioningScheduleState,  11) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  getTirePressureState,  14) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  getMediaState,    15) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  getMediaDetailState,  16) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  getSoftwareUpdateState,  17) \
+X(a, STATIC,   OPTIONAL, MESSAGE,  getParentalControlsState,  19)
+#define CarServer_GetVehicleData_CALLBACK NULL
+#define CarServer_GetVehicleData_DEFAULT NULL
+#define CarServer_GetVehicleData_getChargeState_MSGTYPE CarServer_GetChargeState
+#define CarServer_GetVehicleData_getClimateState_MSGTYPE CarServer_GetClimateState
+#define CarServer_GetVehicleData_getDriveState_MSGTYPE CarServer_GetDriveState
+#define CarServer_GetVehicleData_getLocationState_MSGTYPE CarServer_GetLocationState
+#define CarServer_GetVehicleData_getClosuresState_MSGTYPE CarServer_GetClosuresState
+#define CarServer_GetVehicleData_getChargeScheduleState_MSGTYPE CarServer_GetChargeScheduleState
+#define CarServer_GetVehicleData_getPreconditioningScheduleState_MSGTYPE CarServer_GetPreconditioningScheduleState
+#define CarServer_GetVehicleData_getTirePressureState_MSGTYPE CarServer_GetTirePressureState
+#define CarServer_GetVehicleData_getMediaState_MSGTYPE CarServer_GetMediaState
+#define CarServer_GetVehicleData_getMediaDetailState_MSGTYPE CarServer_GetMediaDetailState
+#define CarServer_GetVehicleData_getSoftwareUpdateState_MSGTYPE CarServer_GetSoftwareUpdateState
+#define CarServer_GetVehicleData_getParentalControlsState_MSGTYPE CarServer_GetParentalControlsState
+
+#define CarServer_GetTirePressureState_FIELDLIST(X, a) \
+
+#define CarServer_GetTirePressureState_CALLBACK NULL
+#define CarServer_GetTirePressureState_DEFAULT NULL
+
+#define CarServer_GetMediaState_FIELDLIST(X, a) \
+
+#define CarServer_GetMediaState_CALLBACK NULL
+#define CarServer_GetMediaState_DEFAULT NULL
+
+#define CarServer_GetMediaDetailState_FIELDLIST(X, a) \
+
+#define CarServer_GetMediaDetailState_CALLBACK NULL
+#define CarServer_GetMediaDetailState_DEFAULT NULL
+
+#define CarServer_GetSoftwareUpdateState_FIELDLIST(X, a) \
+
+#define CarServer_GetSoftwareUpdateState_CALLBACK NULL
+#define CarServer_GetSoftwareUpdateState_DEFAULT NULL
+
+#define CarServer_GetChargeState_FIELDLIST(X, a) \
+
+#define CarServer_GetChargeState_CALLBACK NULL
+#define CarServer_GetChargeState_DEFAULT NULL
+
+#define CarServer_GetClimateState_FIELDLIST(X, a) \
+
+#define CarServer_GetClimateState_CALLBACK NULL
+#define CarServer_GetClimateState_DEFAULT NULL
+
+#define CarServer_GetDriveState_FIELDLIST(X, a) \
+
+#define CarServer_GetDriveState_CALLBACK NULL
+#define CarServer_GetDriveState_DEFAULT NULL
+
+#define CarServer_GetLocationState_FIELDLIST(X, a) \
+
+#define CarServer_GetLocationState_CALLBACK NULL
+#define CarServer_GetLocationState_DEFAULT NULL
+
+#define CarServer_GetClosuresState_FIELDLIST(X, a) \
+
+#define CarServer_GetClosuresState_CALLBACK NULL
+#define CarServer_GetClosuresState_DEFAULT NULL
+
+#define CarServer_GetChargeScheduleState_FIELDLIST(X, a) \
+
+#define CarServer_GetChargeScheduleState_CALLBACK NULL
+#define CarServer_GetChargeScheduleState_DEFAULT NULL
+
+#define CarServer_GetPreconditioningScheduleState_FIELDLIST(X, a) \
+
+#define CarServer_GetPreconditioningScheduleState_CALLBACK NULL
+#define CarServer_GetPreconditioningScheduleState_DEFAULT NULL
+
+#define CarServer_GetParentalControlsState_FIELDLIST(X, a) \
+
+#define CarServer_GetParentalControlsState_CALLBACK NULL
+#define CarServer_GetParentalControlsState_DEFAULT NULL
 
 #define CarServer_EraseUserDataAction_FIELDLIST(X, a) \
-X(a, CALLBACK, SINGULAR, STRING,   reason,            1)
-#define CarServer_EraseUserDataAction_CALLBACK pb_default_field_callback
+X(a, STATIC,   SINGULAR, STRING,   reason,            1)
+#define CarServer_EraseUserDataAction_CALLBACK NULL
 #define CarServer_EraseUserDataAction_DEFAULT NULL
 
 #define CarServer_Response_FIELDLIST(X, a) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  actionStatus,      1) \
+X(a, STATIC,   ONEOF,    MESSAGE,  (response_msg,vehicleData,response_msg.vehicleData),   2) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (response_msg,getSessionInfoResponse,response_msg.getSessionInfoResponse),   3) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (response_msg,getNearbyChargingSites,response_msg.getNearbyChargingSites),   5) \
 X(a, STATIC,   ONEOF,    MESSAGE,  (response_msg,ping,response_msg.ping),   9)
 #define CarServer_Response_CALLBACK NULL
 #define CarServer_Response_DEFAULT NULL
 #define CarServer_Response_actionStatus_MSGTYPE CarServer_ActionStatus
+#define CarServer_Response_response_msg_vehicleData_MSGTYPE CarServer_VehicleData
 #define CarServer_Response_response_msg_getSessionInfoResponse_MSGTYPE Signatures_SessionInfo
 #define CarServer_Response_response_msg_getNearbyChargingSites_MSGTYPE CarServer_NearbyChargingSites
 #define CarServer_Response_response_msg_ping_MSGTYPE CarServer_Ping
@@ -954,9 +1375,9 @@ X(a, STATIC,   ONEOF,    STRING,   (reason,plain_text,reason.plain_text),   1)
 
 #define CarServer_EncryptedData_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, INT32,    field_number,      1) \
-X(a, CALLBACK, SINGULAR, BYTES,    ciphertext,        2) \
-X(a, CALLBACK, SINGULAR, BYTES,    tag,               3)
-#define CarServer_EncryptedData_CALLBACK pb_default_field_callback
+X(a, STATIC,   SINGULAR, BYTES,    ciphertext,        2) \
+X(a, STATIC,   SINGULAR, BYTES,    tag,               3)
+#define CarServer_EncryptedData_CALLBACK NULL
 #define CarServer_EncryptedData_DEFAULT NULL
 
 #define CarServer_ChargingSetLimitAction_FIELDLIST(X, a) \
@@ -979,9 +1400,14 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (charging_action,stop,charging_action.stop), 
 #define CarServer_ChargingStartStopAction_charging_action_stop_MSGTYPE CarServer_Void
 
 #define CarServer_DrivingClearSpeedLimitPinAction_FIELDLIST(X, a) \
-X(a, CALLBACK, SINGULAR, STRING,   pin,               1)
-#define CarServer_DrivingClearSpeedLimitPinAction_CALLBACK pb_default_field_callback
+X(a, STATIC,   SINGULAR, STRING,   pin,               1)
+#define CarServer_DrivingClearSpeedLimitPinAction_CALLBACK NULL
 #define CarServer_DrivingClearSpeedLimitPinAction_DEFAULT NULL
+
+#define CarServer_DrivingClearSpeedLimitPinAdminAction_FIELDLIST(X, a) \
+
+#define CarServer_DrivingClearSpeedLimitPinAdminAction_CALLBACK NULL
+#define CarServer_DrivingClearSpeedLimitPinAdminAction_DEFAULT NULL
 
 #define CarServer_DrivingSetSpeedLimitAction_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, DOUBLE,   limit_mph,         1)
@@ -990,8 +1416,8 @@ X(a, STATIC,   SINGULAR, DOUBLE,   limit_mph,         1)
 
 #define CarServer_DrivingSpeedLimitAction_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, BOOL,     activate,          1) \
-X(a, CALLBACK, SINGULAR, STRING,   pin,               2)
-#define CarServer_DrivingSpeedLimitAction_CALLBACK pb_default_field_callback
+X(a, STATIC,   SINGULAR, STRING,   pin,               2)
+#define CarServer_DrivingSpeedLimitAction_CALLBACK NULL
 #define CarServer_DrivingSpeedLimitAction_DEFAULT NULL
 
 #define CarServer_HvacAutoAction_FIELDLIST(X, a) \
@@ -1001,8 +1427,8 @@ X(a, STATIC,   SINGULAR, BOOL,     manual_override,   2)
 #define CarServer_HvacAutoAction_DEFAULT NULL
 
 #define CarServer_HvacSeatHeaterActions_FIELDLIST(X, a) \
-X(a, CALLBACK, REPEATED, MESSAGE,  hvacSeatHeaterAction,   1)
-#define CarServer_HvacSeatHeaterActions_CALLBACK pb_default_field_callback
+X(a, STATIC,   REPEATED, MESSAGE,  hvacSeatHeaterAction,   1)
+#define CarServer_HvacSeatHeaterActions_CALLBACK NULL
 #define CarServer_HvacSeatHeaterActions_DEFAULT NULL
 #define CarServer_HvacSeatHeaterActions_hvacSeatHeaterAction_MSGTYPE CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction
 
@@ -1041,8 +1467,8 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (seat_position,CAR_SEAT_THIRD_ROW_RIGHT,seat_
 #define CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_seat_position_CAR_SEAT_THIRD_ROW_RIGHT_MSGTYPE CarServer_Void
 
 #define CarServer_HvacSeatCoolerActions_FIELDLIST(X, a) \
-X(a, CALLBACK, REPEATED, MESSAGE,  hvacSeatCoolerAction,   1)
-#define CarServer_HvacSeatCoolerActions_CALLBACK pb_default_field_callback
+X(a, STATIC,   REPEATED, MESSAGE,  hvacSeatCoolerAction,   1)
+#define CarServer_HvacSeatCoolerActions_CALLBACK NULL
 #define CarServer_HvacSeatCoolerActions_DEFAULT NULL
 #define CarServer_HvacSeatCoolerActions_hvacSeatCoolerAction_MSGTYPE CarServer_HvacSeatCoolerActions_HvacSeatCoolerAction
 
@@ -1055,8 +1481,8 @@ X(a, STATIC,   SINGULAR, UENUM,    seat_position,     2)
 #define CarServer_HvacSetPreconditioningMaxAction_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, BOOL,     on,                1) \
 X(a, STATIC,   SINGULAR, BOOL,     manual_override,   2) \
-X(a, CALLBACK, REPEATED, UENUM,    manual_override_mode,   3)
-#define CarServer_HvacSetPreconditioningMaxAction_CALLBACK pb_default_field_callback
+X(a, STATIC,   REPEATED, UENUM,    manual_override_mode,   3)
+#define CarServer_HvacSetPreconditioningMaxAction_CALLBACK NULL
 #define CarServer_HvacSetPreconditioningMaxAction_DEFAULT NULL
 
 #define CarServer_HvacSteeringWheelHeaterAction_FIELDLIST(X, a) \
@@ -1068,11 +1494,11 @@ X(a, STATIC,   SINGULAR, BOOL,     power_on,          1)
 X(a, STATIC,   SINGULAR, FLOAT,    delta_celsius,     1) \
 X(a, STATIC,   SINGULAR, SINT32,   delta_percent,     2) \
 X(a, STATIC,   SINGULAR, FLOAT,    absolute_celsius,   3) \
-X(a, CALLBACK, REPEATED, MESSAGE,  hvac_temperature_zone,   4) \
+X(a, STATIC,   REPEATED, MESSAGE,  hvac_temperature_zone,   4) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  level,             5) \
 X(a, STATIC,   SINGULAR, FLOAT,    driver_temp_celsius,   6) \
 X(a, STATIC,   SINGULAR, FLOAT,    passenger_temp_celsius,   7)
-#define CarServer_HvacTemperatureAdjustmentAction_CALLBACK pb_default_field_callback
+#define CarServer_HvacTemperatureAdjustmentAction_CALLBACK NULL
 #define CarServer_HvacTemperatureAdjustmentAction_DEFAULT NULL
 #define CarServer_HvacTemperatureAdjustmentAction_hvac_temperature_zone_MSGTYPE CarServer_HvacTemperatureAdjustmentAction_HvacTemperatureZone
 #define CarServer_HvacTemperatureAdjustmentAction_level_MSGTYPE CarServer_HvacTemperatureAdjustmentAction_Temperature
@@ -1107,34 +1533,34 @@ X(a, STATIC,   SINGULAR, INT32,    count,             3)
 #define CarServer_GetNearbyChargingSites_DEFAULT NULL
 
 #define CarServer_NearbyChargingSites_FIELDLIST(X, a) \
-X(a, CALLBACK, REPEATED, MESSAGE,  superchargers,     3) \
+X(a, STATIC,   REPEATED, MESSAGE,  superchargers,     3) \
 X(a, STATIC,   SINGULAR, INT64,    congestion_sync_time_utc_secs,   4)
-#define CarServer_NearbyChargingSites_CALLBACK pb_default_field_callback
+#define CarServer_NearbyChargingSites_CALLBACK NULL
 #define CarServer_NearbyChargingSites_DEFAULT NULL
 #define CarServer_NearbyChargingSites_superchargers_MSGTYPE CarServer_Superchargers
 
 #define CarServer_Superchargers_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, INT64,    id,                1) \
-X(a, CALLBACK, SINGULAR, STRING,   amenities,         2) \
+X(a, STATIC,   SINGULAR, STRING,   amenities,         2) \
 X(a, STATIC,   SINGULAR, INT32,    available_stalls,   3) \
-X(a, CALLBACK, SINGULAR, STRING,   billing_info,      4) \
-X(a, CALLBACK, SINGULAR, STRING,   billing_time,      5) \
-X(a, CALLBACK, SINGULAR, STRING,   city,              6) \
-X(a, CALLBACK, SINGULAR, STRING,   country,           7) \
+X(a, STATIC,   SINGULAR, STRING,   billing_info,      4) \
+X(a, STATIC,   SINGULAR, STRING,   billing_time,      5) \
+X(a, STATIC,   SINGULAR, STRING,   city,              6) \
+X(a, STATIC,   SINGULAR, STRING,   country,           7) \
 X(a, STATIC,   SINGULAR, FLOAT,    distance_miles,    8) \
-X(a, CALLBACK, SINGULAR, STRING,   district,          9) \
+X(a, STATIC,   SINGULAR, STRING,   district,          9) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  location,         10) \
-X(a, CALLBACK, SINGULAR, STRING,   name,             11) \
-X(a, CALLBACK, SINGULAR, STRING,   postal_code,      12) \
+X(a, STATIC,   SINGULAR, STRING,   name,             11) \
+X(a, STATIC,   SINGULAR, STRING,   postal_code,      12) \
 X(a, STATIC,   SINGULAR, BOOL,     site_closed,      13) \
-X(a, CALLBACK, SINGULAR, STRING,   state,            14) \
-X(a, CALLBACK, SINGULAR, STRING,   street_address,   15) \
+X(a, STATIC,   SINGULAR, STRING,   state,            14) \
+X(a, STATIC,   SINGULAR, STRING,   street_address,   15) \
 X(a, STATIC,   SINGULAR, INT32,    total_stalls,     16) \
 X(a, STATIC,   SINGULAR, BOOL,     within_range,     17) \
 X(a, STATIC,   SINGULAR, INT32,    max_power_kw,     18) \
 X(a, STATIC,   SINGULAR, INT32,    out_of_order_stalls_number,  19) \
-X(a, CALLBACK, SINGULAR, STRING,   out_of_order_stalls_names,  20)
-#define CarServer_Superchargers_CALLBACK pb_default_field_callback
+X(a, STATIC,   SINGULAR, STRING,   out_of_order_stalls_names,  20)
+#define CarServer_Superchargers_CALLBACK NULL
 #define CarServer_Superchargers_DEFAULT NULL
 #define CarServer_Superchargers_location_MSGTYPE CarServer_LatLong
 
@@ -1201,8 +1627,8 @@ X(a, STATIC,   SINGULAR, BOOL,     on,                1)
 
 #define CarServer_VehicleControlSetValetModeAction_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, BOOL,     on,                1) \
-X(a, CALLBACK, SINGULAR, STRING,   password,          2)
-#define CarServer_VehicleControlSetValetModeAction_CALLBACK pb_default_field_callback
+X(a, STATIC,   SINGULAR, STRING,   password,          2)
+#define CarServer_VehicleControlSetValetModeAction_CALLBACK NULL
 #define CarServer_VehicleControlSetValetModeAction_DEFAULT NULL
 
 #define CarServer_VehicleControlSunroofOpenCloseAction_FIELDLIST(X, a) \
@@ -1219,8 +1645,8 @@ X(a, STATIC,   ONEOF,    MESSAGE,  (action,open,action.open),   5)
 
 #define CarServer_VehicleControlTriggerHomelinkAction_FIELDLIST(X, a) \
 X(a, STATIC,   OPTIONAL, MESSAGE,  location,          1) \
-X(a, CALLBACK, SINGULAR, STRING,   token,             2)
-#define CarServer_VehicleControlTriggerHomelinkAction_CALLBACK pb_default_field_callback
+X(a, STATIC,   SINGULAR, STRING,   token,             2)
+#define CarServer_VehicleControlTriggerHomelinkAction_CALLBACK NULL
 #define CarServer_VehicleControlTriggerHomelinkAction_DEFAULT NULL
 #define CarServer_VehicleControlTriggerHomelinkAction_location_MSGTYPE CarServer_LatLong
 
@@ -1241,8 +1667,8 @@ X(a, STATIC,   SINGULAR, BOOL,     manual_override,   2)
 #define CarServer_HvacBioweaponModeAction_DEFAULT NULL
 
 #define CarServer_AutoSeatClimateAction_FIELDLIST(X, a) \
-X(a, CALLBACK, REPEATED, MESSAGE,  carseat,           1)
-#define CarServer_AutoSeatClimateAction_CALLBACK pb_default_field_callback
+X(a, STATIC,   REPEATED, MESSAGE,  carseat,           1)
+#define CarServer_AutoSeatClimateAction_CALLBACK NULL
 #define CarServer_AutoSeatClimateAction_DEFAULT NULL
 #define CarServer_AutoSeatClimateAction_carseat_MSGTYPE CarServer_AutoSeatClimateAction_CarSeat
 
@@ -1285,6 +1711,30 @@ X(a, STATIC,   SINGULAR, INT32,    charging_amps,     1)
 #define CarServer_SetChargingAmpsAction_CALLBACK NULL
 #define CarServer_SetChargingAmpsAction_DEFAULT NULL
 
+#define CarServer_RemoveChargeScheduleAction_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, UINT64,   id,                1)
+#define CarServer_RemoveChargeScheduleAction_CALLBACK NULL
+#define CarServer_RemoveChargeScheduleAction_DEFAULT NULL
+
+#define CarServer_BatchRemoveChargeSchedulesAction_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, BOOL,     home,              1) \
+X(a, STATIC,   SINGULAR, BOOL,     work,              2) \
+X(a, STATIC,   SINGULAR, BOOL,     other,             3)
+#define CarServer_BatchRemoveChargeSchedulesAction_CALLBACK NULL
+#define CarServer_BatchRemoveChargeSchedulesAction_DEFAULT NULL
+
+#define CarServer_BatchRemovePreconditionSchedulesAction_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, BOOL,     home,              1) \
+X(a, STATIC,   SINGULAR, BOOL,     work,              2) \
+X(a, STATIC,   SINGULAR, BOOL,     other,             3)
+#define CarServer_BatchRemovePreconditionSchedulesAction_CALLBACK NULL
+#define CarServer_BatchRemovePreconditionSchedulesAction_DEFAULT NULL
+
+#define CarServer_RemovePreconditionScheduleAction_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, UINT64,   id,                1)
+#define CarServer_RemovePreconditionScheduleAction_CALLBACK NULL
+#define CarServer_RemovePreconditionScheduleAction_DEFAULT NULL
+
 #define CarServer_SetCabinOverheatProtectionAction_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, BOOL,     on,                1) \
 X(a, STATIC,   SINGULAR, BOOL,     fan_only,          2)
@@ -1292,8 +1742,8 @@ X(a, STATIC,   SINGULAR, BOOL,     fan_only,          2)
 #define CarServer_SetCabinOverheatProtectionAction_DEFAULT NULL
 
 #define CarServer_SetVehicleNameAction_FIELDLIST(X, a) \
-X(a, CALLBACK, SINGULAR, STRING,   vehicleName,       1)
-#define CarServer_SetVehicleNameAction_CALLBACK pb_default_field_callback
+X(a, STATIC,   SINGULAR, STRING,   vehicleName,       1)
+#define CarServer_SetVehicleNameAction_CALLBACK NULL
 #define CarServer_SetVehicleNameAction_DEFAULT NULL
 
 #define CarServer_ChargePortDoorClose_FIELDLIST(X, a) \
@@ -1313,8 +1763,8 @@ X(a, STATIC,   SINGULAR, UENUM,    copActivationTemp,   1)
 
 #define CarServer_VehicleControlSetPinToDriveAction_FIELDLIST(X, a) \
 X(a, STATIC,   SINGULAR, BOOL,     on,                1) \
-X(a, CALLBACK, SINGULAR, STRING,   password,          2)
-#define CarServer_VehicleControlSetPinToDriveAction_CALLBACK pb_default_field_callback
+X(a, STATIC,   SINGULAR, STRING,   password,          2)
+#define CarServer_VehicleControlSetPinToDriveAction_CALLBACK NULL
 #define CarServer_VehicleControlSetPinToDriveAction_DEFAULT NULL
 
 #define CarServer_VehicleControlResetPinToDriveAction_FIELDLIST(X, a) \
@@ -1322,8 +1772,63 @@ X(a, CALLBACK, SINGULAR, STRING,   password,          2)
 #define CarServer_VehicleControlResetPinToDriveAction_CALLBACK NULL
 #define CarServer_VehicleControlResetPinToDriveAction_DEFAULT NULL
 
+#define CarServer_ParentalControlsClearPinAction_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, STRING,   pin,               1)
+#define CarServer_ParentalControlsClearPinAction_CALLBACK NULL
+#define CarServer_ParentalControlsClearPinAction_DEFAULT NULL
+
+#define CarServer_ParentalControlsClearPinAdminAction_FIELDLIST(X, a) \
+
+#define CarServer_ParentalControlsClearPinAdminAction_CALLBACK NULL
+#define CarServer_ParentalControlsClearPinAdminAction_DEFAULT NULL
+
+#define CarServer_ParentalControlsAction_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, BOOL,     activate,          1) \
+X(a, STATIC,   SINGULAR, STRING,   pin,               2)
+#define CarServer_ParentalControlsAction_CALLBACK NULL
+#define CarServer_ParentalControlsAction_DEFAULT NULL
+
+#define CarServer_ParentalControlsEnableSettingsAction_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, UENUM,    setting,           1) \
+X(a, STATIC,   SINGULAR, BOOL,     enable,            2)
+#define CarServer_ParentalControlsEnableSettingsAction_CALLBACK NULL
+#define CarServer_ParentalControlsEnableSettingsAction_DEFAULT NULL
+
+#define CarServer_ParentalControlsSetSpeedLimitAction_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, DOUBLE,   limit_mph,         1)
+#define CarServer_ParentalControlsSetSpeedLimitAction_CALLBACK NULL
+#define CarServer_ParentalControlsSetSpeedLimitAction_DEFAULT NULL
+
+#define CarServer_VehicleControlResetPinToDriveAdminAction_FIELDLIST(X, a) \
+
+#define CarServer_VehicleControlResetPinToDriveAdminAction_CALLBACK NULL
+#define CarServer_VehicleControlResetPinToDriveAdminAction_DEFAULT NULL
+
+#define CarServer_SetLowPowerModeAction_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, BOOL,     low_power_mode,    1)
+#define CarServer_SetLowPowerModeAction_CALLBACK NULL
+#define CarServer_SetLowPowerModeAction_DEFAULT NULL
+
+#define CarServer_SetKeepAccessoryPowerModeAction_FIELDLIST(X, a) \
+X(a, STATIC,   SINGULAR, BOOL,     keep_accessory_power_mode,   1)
+#define CarServer_SetKeepAccessoryPowerModeAction_CALLBACK NULL
+#define CarServer_SetKeepAccessoryPowerModeAction_DEFAULT NULL
+
 extern const pb_msgdesc_t CarServer_Action_msg;
 extern const pb_msgdesc_t CarServer_VehicleAction_msg;
+extern const pb_msgdesc_t CarServer_GetVehicleData_msg;
+extern const pb_msgdesc_t CarServer_GetTirePressureState_msg;
+extern const pb_msgdesc_t CarServer_GetMediaState_msg;
+extern const pb_msgdesc_t CarServer_GetMediaDetailState_msg;
+extern const pb_msgdesc_t CarServer_GetSoftwareUpdateState_msg;
+extern const pb_msgdesc_t CarServer_GetChargeState_msg;
+extern const pb_msgdesc_t CarServer_GetClimateState_msg;
+extern const pb_msgdesc_t CarServer_GetDriveState_msg;
+extern const pb_msgdesc_t CarServer_GetLocationState_msg;
+extern const pb_msgdesc_t CarServer_GetClosuresState_msg;
+extern const pb_msgdesc_t CarServer_GetChargeScheduleState_msg;
+extern const pb_msgdesc_t CarServer_GetPreconditioningScheduleState_msg;
+extern const pb_msgdesc_t CarServer_GetParentalControlsState_msg;
 extern const pb_msgdesc_t CarServer_EraseUserDataAction_msg;
 extern const pb_msgdesc_t CarServer_Response_msg;
 extern const pb_msgdesc_t CarServer_ActionStatus_msg;
@@ -1332,6 +1837,7 @@ extern const pb_msgdesc_t CarServer_EncryptedData_msg;
 extern const pb_msgdesc_t CarServer_ChargingSetLimitAction_msg;
 extern const pb_msgdesc_t CarServer_ChargingStartStopAction_msg;
 extern const pb_msgdesc_t CarServer_DrivingClearSpeedLimitPinAction_msg;
+extern const pb_msgdesc_t CarServer_DrivingClearSpeedLimitPinAdminAction_msg;
 extern const pb_msgdesc_t CarServer_DrivingSetSpeedLimitAction_msg;
 extern const pb_msgdesc_t CarServer_DrivingSpeedLimitAction_msg;
 extern const pb_msgdesc_t CarServer_HvacAutoAction_msg;
@@ -1371,6 +1877,10 @@ extern const pb_msgdesc_t CarServer_ScheduledChargingAction_msg;
 extern const pb_msgdesc_t CarServer_ScheduledDepartureAction_msg;
 extern const pb_msgdesc_t CarServer_HvacClimateKeeperAction_msg;
 extern const pb_msgdesc_t CarServer_SetChargingAmpsAction_msg;
+extern const pb_msgdesc_t CarServer_RemoveChargeScheduleAction_msg;
+extern const pb_msgdesc_t CarServer_BatchRemoveChargeSchedulesAction_msg;
+extern const pb_msgdesc_t CarServer_BatchRemovePreconditionSchedulesAction_msg;
+extern const pb_msgdesc_t CarServer_RemovePreconditionScheduleAction_msg;
 extern const pb_msgdesc_t CarServer_SetCabinOverheatProtectionAction_msg;
 extern const pb_msgdesc_t CarServer_SetVehicleNameAction_msg;
 extern const pb_msgdesc_t CarServer_ChargePortDoorClose_msg;
@@ -1378,10 +1888,31 @@ extern const pb_msgdesc_t CarServer_ChargePortDoorOpen_msg;
 extern const pb_msgdesc_t CarServer_SetCopTempAction_msg;
 extern const pb_msgdesc_t CarServer_VehicleControlSetPinToDriveAction_msg;
 extern const pb_msgdesc_t CarServer_VehicleControlResetPinToDriveAction_msg;
+extern const pb_msgdesc_t CarServer_ParentalControlsClearPinAction_msg;
+extern const pb_msgdesc_t CarServer_ParentalControlsClearPinAdminAction_msg;
+extern const pb_msgdesc_t CarServer_ParentalControlsAction_msg;
+extern const pb_msgdesc_t CarServer_ParentalControlsEnableSettingsAction_msg;
+extern const pb_msgdesc_t CarServer_ParentalControlsSetSpeedLimitAction_msg;
+extern const pb_msgdesc_t CarServer_VehicleControlResetPinToDriveAdminAction_msg;
+extern const pb_msgdesc_t CarServer_SetLowPowerModeAction_msg;
+extern const pb_msgdesc_t CarServer_SetKeepAccessoryPowerModeAction_msg;
 
 /* Defines for backwards compatibility with code written before nanopb-0.4.0 */
 #define CarServer_Action_fields &CarServer_Action_msg
 #define CarServer_VehicleAction_fields &CarServer_VehicleAction_msg
+#define CarServer_GetVehicleData_fields &CarServer_GetVehicleData_msg
+#define CarServer_GetTirePressureState_fields &CarServer_GetTirePressureState_msg
+#define CarServer_GetMediaState_fields &CarServer_GetMediaState_msg
+#define CarServer_GetMediaDetailState_fields &CarServer_GetMediaDetailState_msg
+#define CarServer_GetSoftwareUpdateState_fields &CarServer_GetSoftwareUpdateState_msg
+#define CarServer_GetChargeState_fields &CarServer_GetChargeState_msg
+#define CarServer_GetClimateState_fields &CarServer_GetClimateState_msg
+#define CarServer_GetDriveState_fields &CarServer_GetDriveState_msg
+#define CarServer_GetLocationState_fields &CarServer_GetLocationState_msg
+#define CarServer_GetClosuresState_fields &CarServer_GetClosuresState_msg
+#define CarServer_GetChargeScheduleState_fields &CarServer_GetChargeScheduleState_msg
+#define CarServer_GetPreconditioningScheduleState_fields &CarServer_GetPreconditioningScheduleState_msg
+#define CarServer_GetParentalControlsState_fields &CarServer_GetParentalControlsState_msg
 #define CarServer_EraseUserDataAction_fields &CarServer_EraseUserDataAction_msg
 #define CarServer_Response_fields &CarServer_Response_msg
 #define CarServer_ActionStatus_fields &CarServer_ActionStatus_msg
@@ -1390,6 +1921,7 @@ extern const pb_msgdesc_t CarServer_VehicleControlResetPinToDriveAction_msg;
 #define CarServer_ChargingSetLimitAction_fields &CarServer_ChargingSetLimitAction_msg
 #define CarServer_ChargingStartStopAction_fields &CarServer_ChargingStartStopAction_msg
 #define CarServer_DrivingClearSpeedLimitPinAction_fields &CarServer_DrivingClearSpeedLimitPinAction_msg
+#define CarServer_DrivingClearSpeedLimitPinAdminAction_fields &CarServer_DrivingClearSpeedLimitPinAdminAction_msg
 #define CarServer_DrivingSetSpeedLimitAction_fields &CarServer_DrivingSetSpeedLimitAction_msg
 #define CarServer_DrivingSpeedLimitAction_fields &CarServer_DrivingSpeedLimitAction_msg
 #define CarServer_HvacAutoAction_fields &CarServer_HvacAutoAction_msg
@@ -1429,6 +1961,10 @@ extern const pb_msgdesc_t CarServer_VehicleControlResetPinToDriveAction_msg;
 #define CarServer_ScheduledDepartureAction_fields &CarServer_ScheduledDepartureAction_msg
 #define CarServer_HvacClimateKeeperAction_fields &CarServer_HvacClimateKeeperAction_msg
 #define CarServer_SetChargingAmpsAction_fields &CarServer_SetChargingAmpsAction_msg
+#define CarServer_RemoveChargeScheduleAction_fields &CarServer_RemoveChargeScheduleAction_msg
+#define CarServer_BatchRemoveChargeSchedulesAction_fields &CarServer_BatchRemoveChargeSchedulesAction_msg
+#define CarServer_BatchRemovePreconditionSchedulesAction_fields &CarServer_BatchRemovePreconditionSchedulesAction_msg
+#define CarServer_RemovePreconditionScheduleAction_fields &CarServer_RemovePreconditionScheduleAction_msg
 #define CarServer_SetCabinOverheatProtectionAction_fields &CarServer_SetCabinOverheatProtectionAction_msg
 #define CarServer_SetVehicleNameAction_fields &CarServer_SetVehicleNameAction_msg
 #define CarServer_ChargePortDoorClose_fields &CarServer_ChargePortDoorClose_msg
@@ -1436,64 +1972,98 @@ extern const pb_msgdesc_t CarServer_VehicleControlResetPinToDriveAction_msg;
 #define CarServer_SetCopTempAction_fields &CarServer_SetCopTempAction_msg
 #define CarServer_VehicleControlSetPinToDriveAction_fields &CarServer_VehicleControlSetPinToDriveAction_msg
 #define CarServer_VehicleControlResetPinToDriveAction_fields &CarServer_VehicleControlResetPinToDriveAction_msg
+#define CarServer_ParentalControlsClearPinAction_fields &CarServer_ParentalControlsClearPinAction_msg
+#define CarServer_ParentalControlsClearPinAdminAction_fields &CarServer_ParentalControlsClearPinAdminAction_msg
+#define CarServer_ParentalControlsAction_fields &CarServer_ParentalControlsAction_msg
+#define CarServer_ParentalControlsEnableSettingsAction_fields &CarServer_ParentalControlsEnableSettingsAction_msg
+#define CarServer_ParentalControlsSetSpeedLimitAction_fields &CarServer_ParentalControlsSetSpeedLimitAction_msg
+#define CarServer_VehicleControlResetPinToDriveAdminAction_fields &CarServer_VehicleControlResetPinToDriveAdminAction_msg
+#define CarServer_SetLowPowerModeAction_fields &CarServer_SetLowPowerModeAction_msg
+#define CarServer_SetKeepAccessoryPowerModeAction_fields &CarServer_SetKeepAccessoryPowerModeAction_msg
 
 /* Maximum encoded size of messages (where known) */
-/* CarServer_Action_size depends on runtime parameters */
-/* CarServer_VehicleAction_size depends on runtime parameters */
-/* CarServer_EraseUserDataAction_size depends on runtime parameters */
-/* CarServer_Response_size depends on runtime parameters */
-/* CarServer_EncryptedData_size depends on runtime parameters */
-/* CarServer_DrivingClearSpeedLimitPinAction_size depends on runtime parameters */
-/* CarServer_DrivingSpeedLimitAction_size depends on runtime parameters */
-/* CarServer_HvacSeatHeaterActions_size depends on runtime parameters */
-/* CarServer_HvacSeatCoolerActions_size depends on runtime parameters */
-/* CarServer_HvacSetPreconditioningMaxAction_size depends on runtime parameters */
-/* CarServer_HvacTemperatureAdjustmentAction_size depends on runtime parameters */
-/* CarServer_NearbyChargingSites_size depends on runtime parameters */
-/* CarServer_Superchargers_size depends on runtime parameters */
-/* CarServer_VehicleControlSetValetModeAction_size depends on runtime parameters */
-/* CarServer_VehicleControlTriggerHomelinkAction_size depends on runtime parameters */
-/* CarServer_AutoSeatClimateAction_size depends on runtime parameters */
-/* CarServer_SetVehicleNameAction_size depends on runtime parameters */
-/* CarServer_VehicleControlSetPinToDriveAction_size depends on runtime parameters */
-#define CARSERVER_CAR_SERVER_PB_H_MAX_SIZE       CarServer_ActionStatus_size
+#define CARSERVER_CAR_SERVER_PB_H_MAX_SIZE       CarServer_Response_size
 #define CarServer_ActionStatus_size              207
+#define CarServer_Action_size                    100
 #define CarServer_AutoSeatClimateAction_CarSeat_size 4
+#define CarServer_AutoSeatClimateAction_size     12
+#define CarServer_BatchRemoveChargeSchedulesAction_size 6
+#define CarServer_BatchRemovePreconditionSchedulesAction_size 6
 #define CarServer_ChargePortDoorClose_size       0
 #define CarServer_ChargePortDoorOpen_size        0
 #define CarServer_ChargingSetLimitAction_size    11
 #define CarServer_ChargingStartStopAction_size   2
+#define CarServer_DrivingClearSpeedLimitPinAction_size 17
+#define CarServer_DrivingClearSpeedLimitPinAdminAction_size 0
 #define CarServer_DrivingSetSpeedLimitAction_size 9
+#define CarServer_DrivingSpeedLimitAction_size   19
+#define CarServer_EncryptedData_size             288
+#define CarServer_EraseUserDataAction_size       65
+#define CarServer_GetChargeScheduleState_size    0
+#define CarServer_GetChargeState_size            0
+#define CarServer_GetClimateState_size           0
+#define CarServer_GetClosuresState_size          0
+#define CarServer_GetDriveState_size             0
+#define CarServer_GetLocationState_size          0
+#define CarServer_GetMediaDetailState_size       0
+#define CarServer_GetMediaState_size             0
 #define CarServer_GetNearbyChargingSites_size    24
+#define CarServer_GetParentalControlsState_size  0
+#define CarServer_GetPreconditioningScheduleState_size 0
+#define CarServer_GetSoftwareUpdateState_size    0
+#define CarServer_GetTirePressureState_size      0
+#define CarServer_GetVehicleData_size            27
 #define CarServer_HvacAutoAction_size            4
 #define CarServer_HvacBioweaponModeAction_size   4
 #define CarServer_HvacClimateKeeperAction_size   4
 #define CarServer_HvacSeatCoolerActions_HvacSeatCoolerAction_size 4
+#define CarServer_HvacSeatCoolerActions_size     12
 #define CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_size 4
+#define CarServer_HvacSeatHeaterActions_size     30
+#define CarServer_HvacSetPreconditioningMaxAction_size 10
 #define CarServer_HvacSteeringWheelHeaterAction_size 2
 #define CarServer_HvacTemperatureAdjustmentAction_HvacTemperatureZone_size 2
 #define CarServer_HvacTemperatureAdjustmentAction_Temperature_size 2
+#define CarServer_HvacTemperatureAdjustmentAction_size 46
 #define CarServer_MediaNextFavorite_size         0
 #define CarServer_MediaNextTrack_size            0
 #define CarServer_MediaPlayAction_size           0
 #define CarServer_MediaPreviousFavorite_size     0
 #define CarServer_MediaPreviousTrack_size        0
 #define CarServer_MediaUpdateVolume_size         6
+#define CarServer_NearbyChargingSites_size       5921
+#define CarServer_ParentalControlsAction_size    19
+#define CarServer_ParentalControlsClearPinAction_size 17
+#define CarServer_ParentalControlsClearPinAdminAction_size 0
+#define CarServer_ParentalControlsEnableSettingsAction_size 4
+#define CarServer_ParentalControlsSetSpeedLimitAction_size 9
 #define CarServer_Ping_size                      11
+#define CarServer_RemoveChargeScheduleAction_size 11
+#define CarServer_RemovePreconditionScheduleAction_size 11
+#define CarServer_Response_size                  6134
 #define CarServer_ResultReason_size              202
 #define CarServer_ScheduledChargingAction_size   13
 #define CarServer_ScheduledDepartureAction_size  32
 #define CarServer_SetCabinOverheatProtectionAction_size 4
 #define CarServer_SetChargingAmpsAction_size     11
 #define CarServer_SetCopTempAction_size          2
+#define CarServer_SetKeepAccessoryPowerModeAction_size 2
+#define CarServer_SetLowPowerModeAction_size     2
+#define CarServer_SetVehicleNameAction_size      33
+#define CarServer_Superchargers_size             588
+#define CarServer_VehicleAction_size             98
 #define CarServer_VehicleControlCancelSoftwareUpdateAction_size 0
 #define CarServer_VehicleControlFlashLightsAction_size 0
 #define CarServer_VehicleControlHonkHornAction_size 0
 #define CarServer_VehicleControlResetPinToDriveAction_size 0
+#define CarServer_VehicleControlResetPinToDriveAdminAction_size 0
 #define CarServer_VehicleControlResetValetPinAction_size 0
 #define CarServer_VehicleControlScheduleSoftwareUpdateAction_size 11
+#define CarServer_VehicleControlSetPinToDriveAction_size 19
 #define CarServer_VehicleControlSetSentryModeAction_size 2
+#define CarServer_VehicleControlSetValetModeAction_size 19
 #define CarServer_VehicleControlSunroofOpenCloseAction_size 13
+#define CarServer_VehicleControlTriggerHomelinkAction_size 77
 #define CarServer_VehicleControlWindowAction_size 2
 
 #ifdef __cplusplus

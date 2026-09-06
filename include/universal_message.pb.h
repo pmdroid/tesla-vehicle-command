@@ -48,8 +48,8 @@ typedef enum _UniversalMessage_MessageFault_E {
     UniversalMessage_MessageFault_E_MESSAGEFAULT_ERROR_REMOTE_ACCESS_DISABLED = 21, /* The vehicle owner has disabled Mobile access. */
     UniversalMessage_MessageFault_E_MESSAGEFAULT_ERROR_REMOTE_SERVICE_ACCESS_DISABLED = 22, /* The command was authorized with a Service key, but the vehicle has not been configured to permit remote service commands. */
     UniversalMessage_MessageFault_E_MESSAGEFAULT_ERROR_COMMAND_REQUIRES_ACCOUNT_CREDENTIALS = 23, /* The command requires proof of Tesla account credentials but was not sent over a channel that provides this proof. Resend the command using Fleet API. */
-    UniversalMessage_MessageFault_E_MESSAGEFAULT_ERROR_REQUEST_MTU_EXCEEDED = 24,
-    UniversalMessage_MessageFault_E_MESSAGEFAULT_ERROR_RESPONSE_MTU_EXCEEDED = 25,
+    UniversalMessage_MessageFault_E_MESSAGEFAULT_ERROR_REQUEST_MTU_EXCEEDED = 24, /* Client sent a request with a field that exceeds MTU */
+    UniversalMessage_MessageFault_E_MESSAGEFAULT_ERROR_RESPONSE_MTU_EXCEEDED = 25, /* Client's request was received, but response size exceeded MTU */
     UniversalMessage_MessageFault_E_MESSAGEFAULT_ERROR_REPEATED_COUNTER = 26,
     UniversalMessage_MessageFault_E_MESSAGEFAULT_ERROR_INVALID_KEY_HANDLE = 27,
     UniversalMessage_MessageFault_E_MESSAGEFAULT_ERROR_REQUIRES_RESPONSE_ENCRYPTION = 28
@@ -219,7 +219,7 @@ extern const pb_msgdesc_t UniversalMessage_RoutableMessage_msg;
 #define UNIVERSALMESSAGE_UNIVERSAL_MESSAGE_PB_H_MAX_SIZE UniversalMessage_RoutableMessage_size
 #define UniversalMessage_Destination_size        18
 #define UniversalMessage_MessageStatus_size      4
-#define UniversalMessage_RoutableMessage_size    1353
+#define UniversalMessage_RoutableMessage_size    1255
 #define UniversalMessage_SessionInfoRequest_size 101
 
 #ifdef __cplusplus

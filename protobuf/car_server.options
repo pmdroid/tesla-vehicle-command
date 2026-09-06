@@ -3,5 +3,34 @@ CarServer.Ping.local_timestamp type:FT_IGNORE
 CarServer.Ping.last_remote_timestamp type:FT_IGNORE
 
 CarServer.ResultReason.plain_text max_size:200
+CarServer.EraseUserDataAction.reason max_size:64
+CarServer.DrivingClearSpeedLimitPinAction.pin max_size:16
+CarServer.DrivingSpeedLimitAction.pin max_size:16
+CarServer.VehicleControlSetValetModeAction.password max_size:16
+CarServer.VehicleControlTriggerHomelinkAction.token max_size:64
+CarServer.SetVehicleNameAction.vehicleName max_size:32
+CarServer.VehicleControlSetPinToDriveAction.password max_size:16
+CarServer.ParentalControlsClearPinAction.pin max_size:16
+CarServer.ParentalControlsAction.pin max_size:16
+
+CarServer.EncryptedData.ciphertext max_size:256
+CarServer.EncryptedData.tag max_size:16
 
 CarServer.HvacSeatHeaterActions.hvacSeatHeaterAction max_count:5
+CarServer.HvacSeatCoolerActions.hvacSeatCoolerAction max_count:2
+CarServer.HvacSetPreconditioningMaxAction.manual_override_mode max_count:3
+CarServer.HvacTemperatureAdjustmentAction.hvac_temperature_zone max_count:4
+CarServer.AutoSeatClimateAction.carseat max_count:2
+
+CarServer.NearbyChargingSites.superchargers max_count:10
+CarServer.Superchargers.amenities max_size:64
+CarServer.Superchargers.billing_info max_size:64
+CarServer.Superchargers.billing_time max_size:32
+CarServer.Superchargers.city max_size:32
+CarServer.Superchargers.country max_size:32
+CarServer.Superchargers.district max_size:32
+CarServer.Superchargers.name max_size:64
+CarServer.Superchargers.postal_code max_size:16
+CarServer.Superchargers.state max_size:32
+CarServer.Superchargers.street_address max_size:64
+CarServer.Superchargers.out_of_order_stalls_names max_size:64
