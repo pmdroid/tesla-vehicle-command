@@ -663,6 +663,63 @@ namespace TeslaBLE {
     int CarServer::VolumeDown(unsigned char *buffer, size_t *buffer_size) {
         return CarServer::VolumeDelta(-1, buffer, buffer_size);
     }
+
+    int CarServer::AddChargeSchedule(const CarServer_ChargeSchedule *schedule, unsigned char *buffer,
+                                     size_t *buffer_size) {
+        if (schedule == nullptr) {
+            return ResultCode::ERROR;
+        }
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_addChargeScheduleAction_tag;
+        vehicle_action.vehicle_action_msg.addChargeScheduleAction = *schedule;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::RemoveChargeSchedule(uint64_t id, unsigned char *buffer, size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_removeChargeScheduleAction_tag;
+        vehicle_action.vehicle_action_msg.removeChargeScheduleAction.id = id;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::BatchRemoveChargeSchedules(bool home, bool work, bool other, unsigned char *buffer,
+                                              size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_batchRemoveChargeSchedulesAction_tag;
+        vehicle_action.vehicle_action_msg.batchRemoveChargeSchedulesAction.home = home;
+        vehicle_action.vehicle_action_msg.batchRemoveChargeSchedulesAction.work = work;
+        vehicle_action.vehicle_action_msg.batchRemoveChargeSchedulesAction.other = other;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::AddPreconditionSchedule(const CarServer_PreconditionSchedule *schedule, unsigned char *buffer,
+                                           size_t *buffer_size) {
+        if (schedule == nullptr) {
+            return ResultCode::ERROR;
+        }
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_addPreconditionScheduleAction_tag;
+        vehicle_action.vehicle_action_msg.addPreconditionScheduleAction = *schedule;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::RemovePreconditionSchedule(uint64_t id, unsigned char *buffer, size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_removePreconditionScheduleAction_tag;
+        vehicle_action.vehicle_action_msg.removePreconditionScheduleAction.id = id;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::BatchRemovePreconditionSchedules(bool home, bool work, bool other, unsigned char *buffer,
+                                                    size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg =
+            CarServer_VehicleAction_batchRemovePreconditionSchedulesAction_tag;
+        vehicle_action.vehicle_action_msg.batchRemovePreconditionSchedulesAction.home = home;
+        vehicle_action.vehicle_action_msg.batchRemovePreconditionSchedulesAction.work = work;
+        vehicle_action.vehicle_action_msg.batchRemovePreconditionSchedulesAction.other = other;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
 } // TeslaBLE
 
 

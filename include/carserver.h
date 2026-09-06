@@ -171,6 +171,22 @@ namespace TeslaBLE {
         static int VolumeUp(unsigned char *buffer, size_t *buffer_size);
 
         static int VolumeDown(unsigned char *buffer, size_t *buffer_size);
+
+        static int AddChargeSchedule(const CarServer_ChargeSchedule *schedule, unsigned char *buffer,
+                                     size_t *buffer_size);
+
+        static int RemoveChargeSchedule(uint64_t id, unsigned char *buffer, size_t *buffer_size);
+
+        static int BatchRemoveChargeSchedules(bool home, bool work, bool other, unsigned char *buffer,
+                                              size_t *buffer_size);
+
+        static int AddPreconditionSchedule(const CarServer_PreconditionSchedule *schedule, unsigned char *buffer,
+                                           size_t *buffer_size);
+
+        static int RemovePreconditionSchedule(uint64_t id, unsigned char *buffer, size_t *buffer_size);
+
+        static int BatchRemovePreconditionSchedules(bool home, bool work, bool other, unsigned char *buffer,
+                                                    size_t *buffer_size);
     };
 } // TeslaBLE
 

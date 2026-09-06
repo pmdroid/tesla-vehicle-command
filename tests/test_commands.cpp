@@ -688,3 +688,54 @@ TEST_CASE("FlashLights encodes flash action") {
     REQUIRE(action.action_msg.vehicleAction.which_vehicle_action_msg ==
             CarServer_VehicleAction_vehicleControlFlashLightsAction_tag);
 }
+
+TEST_CASE("AddChargeSchedule encodes id and enabled") {
+    CarServer_ChargeSchedule schedule = CarServer_ChargeSchedule_init_zero;
+    schedule.id = 42;
+    schedule.enabled = true;
+    strncpy(schedule.name, "home", sizeof schedule.name - 1);
+    unsigned char buffer[64];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::AddChargeSchedule(&schedule, buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE(action.action_msg.vehicleAction.which_vehicle_action_msg ==
+            CarServer_VehicleAction_addChargeScheduleAction_tag);
+    REQUIRE(action.action_msg.vehicleAction.vehicle_action_msg.addChargeScheduleAction.id == 42);
+    REQUIRE(action.action_msg.vehicleAction.vehicle_action_msg.addChargeScheduleAction.enabled);
+}
+
+TEST_CASE("RemoveChargeSchedule encodes id") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::RemoveChargeSchedule(99, buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE(action.action_msg.vehicleAction.vehicle_action_msg.removeChargeScheduleAction.id == 99);
+}
+
+TEST_CASE("BatchRemoveChargeSchedules encodes home and work") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::BatchRemoveChargeSchedules(true, true, false, buffer, &size) ==
+            ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE(action.action_msg.vehicleAction.vehicle_action_msg.batchRemoveChargeSchedulesAction.home);
+    REQUIRE(action.action_msg.vehicleAction.vehicle_action_msg.batchRemoveChargeSchedulesAction.work);
+    REQUIRE_FALSE(action.action_msg.vehicleAction.vehicle_action_msg.batchRemoveChargeSchedulesAction.other);
+}
+
+TEST_CASE("AddPreconditionSchedule encodes id") {
+    CarServer_PreconditionSchedule schedule = CarServer_PreconditionSchedule_init_zero;
+    schedule.id = 7;
+    schedule.enabled = true;
+    unsigned char buffer[64];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::AddPreconditionSchedule(&schedule, buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE(action.action_msg.vehicleAction.vehicle_action_msg.addPreconditionScheduleAction.id == 7);
+}
+
+TEST_CASE("AddChargeSchedule rejects a null schedule") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::AddChargeSchedule(nullptr, buffer, &size) == ResultCode::ERROR);
+}
