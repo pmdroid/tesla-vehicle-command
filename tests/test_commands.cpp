@@ -44,6 +44,32 @@ TEST_CASE("Lock encodes RKE_ACTION_LOCK") {
     REQUIRE(message.sub_message.RKEAction == VCSEC_RKEAction_E_RKE_ACTION_LOCK);
 }
 
+TEST_CASE("StopCharging encodes stop not start") {
+    unsigned char buffer[64];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::StopCharging(buffer, &size) == ResultCode::SUCCESS);
+
+    CarServer_Action action = CarServer_Action_init_zero;
+    pb_istream_t stream = pb_istream_from_buffer(buffer, size);
+    REQUIRE(pb_decode(&stream, CarServer_Action_fields, &action));
+    REQUIRE(action.action_msg.vehicleAction.which_vehicle_action_msg ==
+            CarServer_VehicleAction_chargingStartStopAction_tag);
+    REQUIRE(action.action_msg.vehicleAction.vehicle_action_msg.chargingStartStopAction.which_charging_action ==
+            CarServer_ChargingStartStopAction_stop_tag);
+}
+
+TEST_CASE("CloseChargePort encodes chargePortDoorClose") {
+    unsigned char buffer[64];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::CloseChargePort(buffer, &size) == ResultCode::SUCCESS);
+
+    CarServer_Action action = CarServer_Action_init_zero;
+    pb_istream_t stream = pb_istream_from_buffer(buffer, size);
+    REQUIRE(pb_decode(&stream, CarServer_Action_fields, &action));
+    REQUIRE(action.action_msg.vehicleAction.which_vehicle_action_msg ==
+            CarServer_VehicleAction_chargePortDoorClose_tag);
+}
+
 TEST_CASE("Unlock encodes RKE_ACTION_UNLOCK") {
     unsigned char buffer[32];
     size_t size = 0;
