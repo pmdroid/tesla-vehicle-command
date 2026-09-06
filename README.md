@@ -136,7 +136,7 @@ documentation: [vehicle-command](https://github.com/teslamotors/vehicle-command/
 **Updating Protobuf Files:**
 
 1. Copy Tesla protobufs from teslamotors/vehicle-command at the SHA in `protobuf/TESLA_COMMIT`.
-2. Navigate to the library's root directory and execute `PYTHON=... ./proto.sh` (needs nanopb 0.4.8 from the CMake build dir).
+2. Navigate to the library's root directory and execute `PYTHON=... ./proto.sh` (needs nanopb 0.4.9.2 from the CMake build dir).
 
 **Important Considerations:**
 
@@ -195,7 +195,7 @@ called `arduino.sh`. This script likely handles the following tasks:
   concerns. Consider exploring alternative approaches that support newer mbedTLS versions.
 * **Custom Library Creation:** The script might create a library file (`.zip`) compatible with the Arduino IDE. This
   library likely provides essential functionalities for communication with the car.
-* **Dependency Management:** It might manage the installation of additional dependencies such as nanopb version 0.4.8
+* **Dependency Management:** It might manage the installation of additional dependencies such as nanopb version 0.4.9.2
   and the NimBLE library.
 
 **Important Considerations:**
