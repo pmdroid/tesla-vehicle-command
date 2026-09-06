@@ -40,10 +40,19 @@ void message_handler(UniversalMessage_RoutableMessage routable_message) {
     }
 
     if (routable_message.which_payload == UniversalMessage_RoutableMessage_session_info_tag) {
+        unsigned char *tag = nullptr;
+        size_t tag_size = 0;
+        if (routable_message.which_sub_sigData == UniversalMessage_RoutableMessage_signature_data_tag &&
+            routable_message.sub_sigData.signature_data.which_sig_type ==
+            Signatures_SignatureData_session_info_tag_tag) {
+            tag = routable_message.sub_sigData.signature_data.sig_type.session_info_tag.tag.bytes;
+            tag_size = routable_message.sub_sigData.signature_data.sig_type.session_info_tag.tag.size;
+        }
         session.UpdateSessionInfo(routable_message.from_destination.sub_destination.
                                   domain,
                                   routable_message.payload.session_info.bytes,
-                                  routable_message.payload.session_info.size);
+                                  routable_message.payload.session_info.size,
+                                  tag, tag_size);
     }
 }
 

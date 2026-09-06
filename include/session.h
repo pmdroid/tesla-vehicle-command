@@ -25,6 +25,8 @@ namespace TeslaBLE {
         unsigned char vin_[17]{};
         unsigned char routing_address_[16]{};
         std::map<UniversalMessage_Domain, bool> has_valid_session_info_;
+        std::map<UniversalMessage_Domain, unsigned char[16]> request_uuids_;
+        std::map<UniversalMessage_Domain, size_t> request_uuid_sizes_;
 
         MetaData meta_data_ = MetaData{};
         Authenticator *authenticator_ = nullptr;
@@ -40,8 +42,10 @@ namespace TeslaBLE {
 
         void SetRoutingAddress(unsigned char *routing_address);
 
+        void SetRequestUuid(UniversalMessage_Domain domain, unsigned char *uuid, size_t uuid_size);
+
         int UpdateSessionInfo(UniversalMessage_Domain domain, unsigned char *session_info_message,
-                              size_t session_info_length);
+                              size_t session_info_length, unsigned char *tag, size_t tag_length);
 
         int BuildRoutableMessage(UniversalMessage_Domain domain, unsigned char *action_message_buffer,
                                  size_t action_message_buffer_size, unsigned char *output_buffer,

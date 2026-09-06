@@ -13,7 +13,11 @@
 #include <mbedtls/ctr_drbg.h>
 #include <mbedtls/ecdh.h>
 #include <mbedtls/entropy.h>
+extern "C" {
+#include <mbedtls/constant_time.h>
+}
 #include <mbedtls/gcm.h>
+#include <mbedtls/md.h>
 #include <mbedtls/pk.h>
 #include <mbedtls/platform_util.h>
 #include <mbedtls/sha1.h>
@@ -23,6 +27,7 @@
 
 #include <shared.h>
 #include <keys.pb.h>
+#include <signatures.pb.h>
 #include <vcsec.pb.h>
 
 namespace TeslaBLE {
@@ -368,6 +373,102 @@ namespace TeslaBLE {
         }
 
         mbedtls_gcm_free(&aes_context);
+        return ResultCode::SUCCESS;
+    }
+
+    int Authenticator::VerifySessionInfoTag(UniversalMessage_Domain domain, unsigned char *vin,
+                                            unsigned char *challenge, size_t challenge_size,
+                                            unsigned char *session_info, size_t session_info_size,
+                                            unsigned char *tag, size_t tag_size) {
+        if (vin == nullptr || challenge == nullptr || session_info == nullptr || tag == nullptr) {
+            return ResultCode::ERROR;
+        }
+        if (challenge_size == 0 || challenge_size > 255 || session_info_size == 0 || tag_size != 32) {
+            return ResultCode::SESSION_INFO_HMAC_INVALID;
+        }
+
+        unsigned char shared_key[16];
+        int result = this->GetSharedSecret(domain, shared_key, sizeof(shared_key));
+        if (result != ResultCode::SUCCESS) {
+            return result;
+        }
+
+        const mbedtls_md_info_t *md_info = mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
+        if (md_info == nullptr) {
+            mbedtls_platform_zeroize(shared_key, sizeof(shared_key));
+            return ResultCode::MBEDTLS_ERROR;
+        }
+
+        unsigned char session_info_key[32];
+        const unsigned char label[] = "session info";
+        int return_code = mbedtls_md_hmac(md_info, shared_key, sizeof(shared_key), label,
+                                          sizeof(label) - 1, session_info_key);
+        mbedtls_platform_zeroize(shared_key, sizeof(shared_key));
+        if (return_code != 0) {
+            mbedtls_platform_zeroize(session_info_key, sizeof(session_info_key));
+            return ResultCode::MBEDTLS_ERROR;
+        }
+
+        mbedtls_md_context_t hmac;
+        mbedtls_md_init(&hmac);
+        return_code = mbedtls_md_setup(&hmac, md_info, 1);
+        if (return_code != 0) {
+            mbedtls_md_free(&hmac);
+            mbedtls_platform_zeroize(session_info_key, sizeof(session_info_key));
+            return ResultCode::MBEDTLS_ERROR;
+        }
+        return_code = mbedtls_md_hmac_starts(&hmac, session_info_key, sizeof(session_info_key));
+        mbedtls_platform_zeroize(session_info_key, sizeof(session_info_key));
+        if (return_code != 0) {
+            mbedtls_md_free(&hmac);
+            return ResultCode::MBEDTLS_ERROR;
+        }
+
+        unsigned char signature_type[3] = {Signatures_Tag_TAG_SIGNATURE_TYPE, 1,
+                                           Signatures_SignatureType_SIGNATURE_TYPE_HMAC};
+        unsigned char personalization_header[2] = {Signatures_Tag_TAG_PERSONALIZATION, 17};
+        unsigned char challenge_header[2] = {Signatures_Tag_TAG_CHALLENGE,
+                                             static_cast<unsigned char>(challenge_size)};
+        unsigned char end_tag = Signatures_Tag_TAG_END;
+
+        return_code = mbedtls_md_hmac_update(&hmac, signature_type, sizeof(signature_type));
+        if (return_code == 0) {
+            return_code = mbedtls_md_hmac_update(&hmac, personalization_header,
+                                                 sizeof(personalization_header));
+        }
+        if (return_code == 0) {
+            return_code = mbedtls_md_hmac_update(&hmac, vin, 17);
+        }
+        if (return_code == 0) {
+            return_code = mbedtls_md_hmac_update(&hmac, challenge_header, sizeof(challenge_header));
+        }
+        if (return_code == 0) {
+            return_code = mbedtls_md_hmac_update(&hmac, challenge, challenge_size);
+        }
+        if (return_code == 0) {
+            return_code = mbedtls_md_hmac_update(&hmac, &end_tag, 1);
+        }
+        if (return_code == 0) {
+            return_code = mbedtls_md_hmac_update(&hmac, session_info, session_info_size);
+        }
+        if (return_code != 0) {
+            mbedtls_md_free(&hmac);
+            return ResultCode::MBEDTLS_ERROR;
+        }
+
+        unsigned char computed[32];
+        return_code = mbedtls_md_hmac_finish(&hmac, computed);
+        mbedtls_md_free(&hmac);
+        if (return_code != 0) {
+            mbedtls_platform_zeroize(computed, sizeof(computed));
+            return ResultCode::MBEDTLS_ERROR;
+        }
+
+        int mismatch = mbedtls_ct_memcmp(computed, tag, 32);
+        mbedtls_platform_zeroize(computed, sizeof(computed));
+        if (mismatch != 0) {
+            return ResultCode::SESSION_INFO_HMAC_INVALID;
+        }
         return ResultCode::SUCCESS;
     }
 
