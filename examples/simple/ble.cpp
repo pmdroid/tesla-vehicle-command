@@ -128,7 +128,9 @@ int main() {
         std::cout << "\n";
         switch (userInput) {
             case 1:
-                authenticator.BuildKeyWhitelistMessage(Keys_Role_ROLE_OWNER, whitelist_buffer, &whitelist_size);
+                authenticator.BuildKeyWhitelistMessage(Keys_Role_ROLE_OWNER,
+                                                       VCSEC_KeyFormFactor_KEY_FORM_FACTOR_ANDROID_DEVICE,
+                                                       whitelist_buffer, &whitelist_size);
                 std::cout << "\n\n\nTouch NFC Card now!\n\n\n";
                 break;
             case 2:
