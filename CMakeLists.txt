@@ -6,12 +6,22 @@ project(TeslaBLE
         LANGUAGES CXX C
 )
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Werror -g -O0")
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+cmake_policy(SET CMP0077 NEW)
 set(MBEDTLS_AS_SUBPROJECT ON)
-set(ENABLE_PROGRAMS OFF)
-set(ENABLE_TESTING OFF)
+set(ENABLE_PROGRAMS OFF CACHE BOOL "" FORCE)
+set(ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+set(MBEDTLS_FATAL_WARNINGS OFF CACHE BOOL "" FORCE)
 set(BUILD_EXAMPLES ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
+if (CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
+    set(TESLA_BLE_BUILD_TESTS_DEFAULT ON)
+else ()
+    set(TESLA_BLE_BUILD_TESTS_DEFAULT OFF)
+endif ()
+option(TESLA_BLE_BUILD_TESTS "Build host unit tests" ${TESLA_BLE_BUILD_TESTS_DEFAULT})
 
 FetchContent_Declare(
         nanopb
@@ -59,6 +69,7 @@ set(PROTOBUF_SOURCES
 
 set(ALL_SOURCES ${COMMON_SOURCES} ${NANOPB_SOURCES} ${PROTOBUF_SOURCES})
 add_library(TeslaBLE STATIC ${ALL_SOURCES})
+target_compile_options(TeslaBLE PRIVATE -Wall -g -O0)
 
 # Include directories
 target_include_directories(TeslaBLE
@@ -74,7 +85,7 @@ target_include_directories(TeslaBLE
 )
 
 # Link libraries
-target_link_libraries(TeslaBLE PUBLIC mbedcrypto mbedtls mbedx509)
+target_link_libraries(TeslaBLE PUBLIC mbedcrypto)
 
 # Public headers
 set(PUBLIC_HEADERS
@@ -97,3 +108,8 @@ set(PUBLIC_HEADERS
 foreach (HEADER ${PUBLIC_HEADERS})
     set_target_properties(TeslaBLE PROPERTIES PUBLIC_HEADER ${HEADER})
 endforeach ()
+
+if (TESLA_BLE_BUILD_TESTS)
+    enable_testing()
+    add_subdirectory(tests)
+endif ()
