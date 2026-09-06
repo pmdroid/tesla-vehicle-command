@@ -2,14 +2,24 @@
 
 #include <cstring>
 #include <string>
+#include <cstdlib>
 
 #include <shared.h>
 
 TEST_CASE("BLE advertisement name matches Tesla protocol.md example") {
-    unsigned char vin[] = "5YJS0000000000000";
+    unsigned char vin[17];
+    memcpy(vin, "5YJS0000000000000", 17);
     char identifier[19];
     REQUIRE(TeslaBLE::Common::calculateIdentifier(vin, identifier) == 0);
     REQUIRE(std::string(identifier) == "S1a87a5a75f3df858C");
+}
+
+TEST_CASE("HexStrToUint8 returns null on invalid digits") {
+    REQUIRE(TeslaBLE::Common::HexStrToUint8("zz") == nullptr);
+    unsigned char *ok = TeslaBLE::Common::HexStrToUint8("0a");
+    REQUIRE(ok != nullptr);
+    REQUIRE(ok[0] == 0x0a);
+    free(ok);
 }
 
 TEST_CASE("BLE length prefix is two-byte big-endian") {

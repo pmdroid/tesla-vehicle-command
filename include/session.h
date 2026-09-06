@@ -34,10 +34,6 @@ namespace TeslaBLE {
     public:
         void LoadAuthenticator(Authenticator *authenticator);
 
-        int LoadPrivateKey(unsigned char *private_key, size_t private_key_size);
-
-        void LoadPrivateKeyContext(mbedtls_pk_context *shared_private_key_context_);
-
         int GenerateRoutingAddress();
 
         void SetRoutingAddress(unsigned char *routing_address);
@@ -50,9 +46,6 @@ namespace TeslaBLE {
         int BuildRoutableMessage(UniversalMessage_Domain domain, unsigned char *action_message_buffer,
                                  size_t action_message_buffer_size, unsigned char *output_buffer,
                                  size_t *output_buffer_size);
-
-        int BuildActionMessage(UniversalMessage_Domain domain, const CarServer_VehicleAction *vehicle_action,
-                               unsigned char *buffer, size_t *buffer_size);
 
         int BuildRequestSessionInfoMessage(UniversalMessage_Domain domain,
                                            unsigned char *output_buffer, size_t *output_length);
