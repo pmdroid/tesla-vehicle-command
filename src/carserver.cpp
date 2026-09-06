@@ -720,6 +720,73 @@ namespace TeslaBLE {
         vehicle_action.vehicle_action_msg.batchRemovePreconditionSchedulesAction.other = other;
         return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
     }
+
+    int CarServer::ClearSpeedLimitPinAdmin(unsigned char *buffer, size_t *buffer_size) {
+        return CarServer::EmptyVehicleAction(CarServer_VehicleAction_drivingClearSpeedLimitPinAdminAction_tag,
+                                             buffer, buffer_size);
+    }
+
+    int CarServer::ClearPinToDriveAdmin(unsigned char *buffer, size_t *buffer_size) {
+        return CarServer::EmptyVehicleAction(CarServer_VehicleAction_vehicleControlResetPinToDriveAdminAction_tag,
+                                             buffer, buffer_size);
+    }
+
+    int CarServer::ParentalControlsSet(bool activate, const char *pin, unsigned char *buffer, size_t *buffer_size) {
+        if (!FourDigitPin(pin)) {
+            return ResultCode::ERROR;
+        }
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_parentalControlsAction_tag;
+        vehicle_action.vehicle_action_msg.parentalControlsAction.activate = activate;
+        strncpy(vehicle_action.vehicle_action_msg.parentalControlsAction.pin, pin,
+                sizeof(vehicle_action.vehicle_action_msg.parentalControlsAction.pin) - 1);
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::ParentalControlsActivate(const char *pin, unsigned char *buffer, size_t *buffer_size) {
+        return CarServer::ParentalControlsSet(true, pin, buffer, buffer_size);
+    }
+
+    int CarServer::ParentalControlsDeactivate(const char *pin, unsigned char *buffer, size_t *buffer_size) {
+        return CarServer::ParentalControlsSet(false, pin, buffer, buffer_size);
+    }
+
+    int CarServer::ParentalControlsEnableSetting(
+        CarServer_ParentalControlsEnableSettingsAction_ParentalControlsSetting_E setting, bool enable,
+        unsigned char *buffer, size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_parentalControlsEnableSettingsAction_tag;
+        vehicle_action.vehicle_action_msg.parentalControlsEnableSettingsAction.setting = setting;
+        vehicle_action.vehicle_action_msg.parentalControlsEnableSettingsAction.enable = enable;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::ParentalControlsSetSpeedLimit(double limit_mph, unsigned char *buffer, size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_parentalControlsSetSpeedLimitAction_tag;
+        vehicle_action.vehicle_action_msg.parentalControlsSetSpeedLimitAction.limit_mph = limit_mph;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::ParentalControlsClearPinAdmin(unsigned char *buffer, size_t *buffer_size) {
+        return CarServer::EmptyVehicleAction(CarServer_VehicleAction_parentalControlsClearPinAdminAction_tag, buffer,
+                                             buffer_size);
+    }
+
+    int CarServer::SetLowPowerMode(bool on, unsigned char *buffer, size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_setLowPowerModeAction_tag;
+        vehicle_action.vehicle_action_msg.setLowPowerModeAction.low_power_mode = on;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::SetKeepAccessoryPowerMode(bool on, unsigned char *buffer, size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_setKeepAccessoryPowerModeAction_tag;
+        vehicle_action.vehicle_action_msg.setKeepAccessoryPowerModeAction.keep_accessory_power_mode = on;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
 } // TeslaBLE
+
 
 
