@@ -5,6 +5,8 @@
 #ifndef TESLA_BLE_SESSION_H
 #define TESLA_BLE_SESSION_H
 
+#include <map>
+
 #include <car_server.pb.h>
 #include <universal_message.pb.h>
 
@@ -22,7 +24,7 @@ namespace TeslaBLE {
 
         unsigned char vin_[17]{};
         unsigned char routing_address_[16]{};
-        bool has_valid_session_info = false;
+        std::map<UniversalMessage_Domain, bool> has_valid_session_info_;
 
         MetaData meta_data_ = MetaData{};
         Authenticator *authenticator_ = nullptr;

@@ -8,7 +8,10 @@
 #include <chrono>
 #include <cstdlib>
 
+#include <ctime>
+
 #include <car_server.pb.h>
+#include <signatures.pb.h>
 #include <universal_message.pb.h>
 
 #include <pb.h>
@@ -78,14 +81,19 @@ namespace TeslaBLE {
                                    size_t session_info_length) {
         Signatures_SessionInfo session_info = Signatures_SessionInfo_init_zero;
 
-        if (session_info.status == Signatures_Session_Info_Status_SESSION_INFO_STATUS_KEY_NOT_ON_WHITELIST) {
-            return ResultCode::SESSION_INFO_KEY_NOT_WHITELISTED;
-        }
-
         pb_istream_t stream = pb_istream_from_buffer(session_info_message, session_info_length);
         if (!pb_decode(&stream, Signatures_SessionInfo_fields, &session_info)) {
             printf("Failed to decode session info: %s\n", PB_GET_ERROR(&stream));
             return ResultCode::NANOPB_DECODE_ERROR;
+        }
+
+        if (session_info.status == Signatures_Session_Info_Status_SESSION_INFO_STATUS_KEY_NOT_ON_WHITELIST) {
+            this->has_valid_session_info_[domain] = false;
+            return ResultCode::SESSION_INFO_KEY_NOT_WHITELISTED;
+        }
+
+        if (this->authenticator_ == nullptr) {
+            return ResultCode::PRIVATE_KEY_NOT_LOADED;
         }
 
         uint32_t now = std::time(nullptr);
@@ -94,19 +102,28 @@ namespace TeslaBLE {
         this->counters_[domain] = session_info.counter;
         memcpy(this->epochs_[domain], session_info.epoch, 16);
 
-        // saved for export and import of the session information
-        memcpy(this->car_keys[domain], session_info.publicKey.bytes, 65);
+        size_t key_size = session_info.publicKey.size;
+        if (key_size > sizeof(this->car_keys[domain])) {
+            key_size = sizeof(this->car_keys[domain]);
+        }
+        memcpy(this->car_keys[domain], session_info.publicKey.bytes, key_size);
         this->car_key_sizes[domain] = session_info.publicKey.size;
 
-        this->has_valid_session_info = true;
-        return this->authenticator_->LoadTeslaPublicKey(domain, session_info.publicKey.bytes,
-                                                        session_info.publicKey.size);
+        int result = this->authenticator_->LoadTeslaPublicKey(domain, session_info.publicKey.bytes,
+                                                              session_info.publicKey.size);
+        if (result != ResultCode::SUCCESS) {
+            this->has_valid_session_info_[domain] = false;
+            return result;
+        }
+        this->has_valid_session_info_[domain] = true;
+        return ResultCode::SUCCESS;
     }
 
     int Session::BuildRoutableMessage(UniversalMessage_Domain domain, unsigned char *action_message_buffer,
                                       size_t action_message_buffer_size, unsigned char *output_buffer,
                                       size_t *output_buffer_size) {
-        if (!this->has_valid_session_info) {
+        auto valid = this->has_valid_session_info_.find(domain);
+        if (valid == this->has_valid_session_info_.end() || !valid->second) {
             return ResultCode::SESSION_INFO_NOT_LOADED;
         }
 
