@@ -18,6 +18,7 @@ add_executable(tesla_ble_tests
         test_session.cpp
         test_protos.cpp
         test_goldens.cpp
+        test_deps.cpp
 )
 target_include_directories(tesla_ble_tests PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_compile_definitions(tesla_ble_tests PRIVATE
