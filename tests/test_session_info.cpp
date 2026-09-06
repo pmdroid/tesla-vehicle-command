@@ -4,6 +4,7 @@
 #include <vector>
 
 #include <authenticator.h>
+#include <pb_decode.h>
 #include <pb_encode.h>
 #include <security.h>
 #include <session.h>
@@ -134,5 +135,18 @@ TEST_CASE("UpdateSessionInfo rejects a bad session info HMAC") {
     REQUIRE(session.UpdateSessionInfo(
                 UniversalMessage_Domain_DOMAIN_INFOTAINMENT, encoded.data(), encoded.size(),
                 tag.data(), tag.size()) == ResultCode::SESSION_INFO_HMAC_INVALID);
+    unsigned char shared[16];
+    REQUIRE(authenticator.GetSharedSecret(
+                UniversalMessage_Domain_DOMAIN_INFOTAINMENT, shared, sizeof(shared)) ==
+            ResultCode::SESSION_INFO_NOT_LOADED);
+    unsigned char exported[Signatures_SessionInfo_size];
+    size_t exported_size = 0;
+    REQUIRE(session.ExportSessionInfo(
+                UniversalMessage_Domain_DOMAIN_INFOTAINMENT, exported, &exported_size) ==
+            ResultCode::SUCCESS);
+    Signatures_SessionInfo exported_info = Signatures_SessionInfo_init_zero;
+    pb_istream_t stream = pb_istream_from_buffer(exported, exported_size);
+    REQUIRE(pb_decode(&stream, Signatures_SessionInfo_fields, &exported_info));
+    REQUIRE(exported_info.counter == 0);
     authenticator.Cleanup();
 }

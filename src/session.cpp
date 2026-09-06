@@ -25,11 +25,8 @@ namespace TeslaBLE {
         this->authenticator_ = authenticator;
     }
 
-    void Session::GenerateRoutingAddress() {
-        if (Common::RandomBytes(this->routing_address_, sizeof(this->routing_address_)) !=
-            ResultCode::SUCCESS) {
-            memset(this->routing_address_, 0, sizeof(this->routing_address_));
-        }
+    int Session::GenerateRoutingAddress() {
+        return Common::RandomBytes(this->routing_address_, sizeof(this->routing_address_));
     }
 
     void Session::SetRoutingAddress(unsigned char *routing_address) {
@@ -105,6 +102,28 @@ namespace TeslaBLE {
             return ResultCode::PRIVATE_KEY_NOT_LOADED;
         }
 
+        int result = this->authenticator_->LoadTeslaPublicKey(domain, session_info.publicKey.bytes,
+                                                              session_info.publicKey.size);
+        if (result != ResultCode::SUCCESS) {
+            this->has_valid_session_info_[domain] = false;
+            return result;
+        }
+
+        auto uuid_size = this->request_uuid_sizes_.find(domain);
+        if (uuid_size == this->request_uuid_sizes_.end() || uuid_size->second == 0) {
+            this->authenticator_->ClearSharedSecret(domain);
+            this->has_valid_session_info_[domain] = false;
+            return ResultCode::SESSION_INFO_HMAC_INVALID;
+        }
+        result = this->authenticator_->VerifySessionInfoTag(
+            domain, this->vin_, this->request_uuids_[domain], uuid_size->second,
+            session_info_message, session_info_length, tag, tag_length);
+        if (result != ResultCode::SUCCESS) {
+            this->authenticator_->ClearSharedSecret(domain);
+            this->has_valid_session_info_[domain] = false;
+            return result;
+        }
+
         uint32_t now = std::time(nullptr);
         this->clock_times_[domain] = session_info.clock_time;
         this->time_zeros_[domain] = now - session_info.clock_time;
@@ -117,26 +136,6 @@ namespace TeslaBLE {
         }
         memcpy(this->car_keys[domain], session_info.publicKey.bytes, key_size);
         this->car_key_sizes[domain] = session_info.publicKey.size;
-
-        int result = this->authenticator_->LoadTeslaPublicKey(domain, session_info.publicKey.bytes,
-                                                              session_info.publicKey.size);
-        if (result != ResultCode::SUCCESS) {
-            this->has_valid_session_info_[domain] = false;
-            return result;
-        }
-
-        auto uuid_size = this->request_uuid_sizes_.find(domain);
-        if (uuid_size == this->request_uuid_sizes_.end() || uuid_size->second == 0) {
-            this->has_valid_session_info_[domain] = false;
-            return ResultCode::SESSION_INFO_HMAC_INVALID;
-        }
-        result = this->authenticator_->VerifySessionInfoTag(
-            domain, this->vin_, this->request_uuids_[domain], uuid_size->second,
-            session_info_message, session_info_length, tag, tag_length);
-        if (result != ResultCode::SUCCESS) {
-            this->has_valid_session_info_[domain] = false;
-            return result;
-        }
 
         this->has_valid_session_info_[domain] = true;
         return ResultCode::SUCCESS;
@@ -170,11 +169,13 @@ namespace TeslaBLE {
 
         uint32_t counter = this->Counter(domain);
         uint32_t expiresAt = this->ExpiresAt(domain, 10);
+        uint32_t flags = 1u << UniversalMessage_Flags_FLAG_ENCRYPT_RESPONSE;
+        routable_message.flags = flags;
 
         this->meta_data_.Start();
         int result_code = this->meta_data_.BuildMetadata(
             domain, Signatures_SignatureType_SIGNATURE_TYPE_AES_GCM_PERSONALIZED, this->vin_,
-            expiresAt, counter, this->epochs_[domain]);
+            expiresAt, counter, this->epochs_[domain], flags);
         if (result_code != ResultCode::SUCCESS) {
             return result_code;
         }

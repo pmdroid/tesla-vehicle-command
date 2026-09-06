@@ -18,6 +18,9 @@ PB_BIND(Signatures_HMAC_Signature_Data, Signatures_HMAC_Signature_Data, AUTO)
 PB_BIND(Signatures_HMAC_Personalized_Signature_Data, Signatures_HMAC_Personalized_Signature_Data, AUTO)
 
 
+PB_BIND(Signatures_AES_GCM_Response_Signature_Data, Signatures_AES_GCM_Response_Signature_Data, AUTO)
+
+
 PB_BIND(Signatures_SignatureData, Signatures_SignatureData, AUTO)
 
 

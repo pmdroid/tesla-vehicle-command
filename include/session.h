@@ -38,7 +38,7 @@ namespace TeslaBLE {
 
         void LoadPrivateKeyContext(mbedtls_pk_context *shared_private_key_context_);
 
-        void GenerateRoutingAddress();
+        int GenerateRoutingAddress();
 
         void SetRoutingAddress(unsigned char *routing_address);
 
