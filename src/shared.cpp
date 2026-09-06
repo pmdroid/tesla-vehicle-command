@@ -154,6 +154,17 @@ namespace TeslaBLE {
         return ResultCode::SUCCESS;
     }
 
+    int Common::DecodeCarServerResponse(unsigned char *buffer, size_t buffer_size,
+                                        CarServer_Response *output_message) {
+        pb_istream_t input_stream = pb_istream_from_buffer(buffer, buffer_size);
+        if (!pb_decode(&input_stream, CarServer_Response_fields, output_message)) {
+            printf("Decoding failed: %s\n", PB_GET_ERROR(&input_stream));
+            return ResultCode::NANOPB_DECODE_ERROR;
+        }
+
+        return ResultCode::SUCCESS;
+    }
+
     int Common::EncodeRoutableMessage(UniversalMessage_RoutableMessage routable_message,
                                       unsigned char *output_buffer,
                                       size_t *output_size) {

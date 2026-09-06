@@ -8,6 +8,21 @@
 #include <shared.h>
 
 namespace TeslaBLE {
+    enum VehicleDataCategory {
+        VehicleDataCharge = 0,
+        VehicleDataClimate,
+        VehicleDataDrive,
+        VehicleDataLocation,
+        VehicleDataClosures,
+        VehicleDataChargeSchedule,
+        VehicleDataPreconditioningSchedule,
+        VehicleDataTirePressure,
+        VehicleDataMedia,
+        VehicleDataMediaDetail,
+        VehicleDataSoftwareUpdate,
+        VehicleDataParentalControls,
+    };
+
     class CarServer {
         static int BuildActionMessage(
             CarServer_Action *car_server_action, unsigned char *buffer, size_t *buffer_size);
@@ -36,6 +51,9 @@ namespace TeslaBLE {
         static int OpenChargePort(unsigned char *buffer, size_t *buffer_size);
 
         static int CloseChargePort(unsigned char *buffer, size_t *buffer_size);
+
+        static int GetVehicleData(VehicleDataCategory category, unsigned char *buffer,
+                                  size_t *buffer_size);
     };
 } // TeslaBLE
 

@@ -188,4 +188,59 @@ namespace TeslaBLE {
 
         return CarServer::BuildActionMessage(&car_server_action, buffer, buffer_size);
     }
+
+    int CarServer::GetVehicleData(VehicleDataCategory category, unsigned char *buffer,
+                                  size_t *buffer_size) {
+        CarServer_GetVehicleData get_vehicle_data = CarServer_GetVehicleData_init_zero;
+        switch (category) {
+            case VehicleDataCharge:
+                get_vehicle_data.has_getChargeState = true;
+                break;
+            case VehicleDataClimate:
+                get_vehicle_data.has_getClimateState = true;
+                break;
+            case VehicleDataDrive:
+                get_vehicle_data.has_getDriveState = true;
+                break;
+            case VehicleDataLocation:
+                get_vehicle_data.has_getLocationState = true;
+                break;
+            case VehicleDataClosures:
+                get_vehicle_data.has_getClosuresState = true;
+                break;
+            case VehicleDataChargeSchedule:
+                get_vehicle_data.has_getChargeScheduleState = true;
+                break;
+            case VehicleDataPreconditioningSchedule:
+                get_vehicle_data.has_getPreconditioningScheduleState = true;
+                break;
+            case VehicleDataTirePressure:
+                get_vehicle_data.has_getTirePressureState = true;
+                break;
+            case VehicleDataMedia:
+                get_vehicle_data.has_getMediaState = true;
+                break;
+            case VehicleDataMediaDetail:
+                get_vehicle_data.has_getMediaDetailState = true;
+                break;
+            case VehicleDataSoftwareUpdate:
+                get_vehicle_data.has_getSoftwareUpdateState = true;
+                break;
+            case VehicleDataParentalControls:
+                get_vehicle_data.has_getParentalControlsState = true;
+                break;
+            default:
+                return ResultCode::ERROR;
+        }
+
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_getVehicleData_tag;
+        vehicle_action.vehicle_action_msg.getVehicleData = get_vehicle_data;
+
+        CarServer_Action car_server_action = CarServer_Action_init_zero;
+        car_server_action.which_action_msg = CarServer_Action_vehicleAction_tag;
+        car_server_action.action_msg.vehicleAction = vehicle_action;
+
+        return CarServer::BuildActionMessage(&car_server_action, buffer, buffer_size);
+    }
 } // TeslaBLE
