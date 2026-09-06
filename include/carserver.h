@@ -8,6 +8,25 @@
 #include <shared.h>
 
 namespace TeslaBLE {
+    enum ClimateLevel {
+        ClimateOff = 0,
+        ClimateLow,
+        ClimateMed,
+        ClimateHigh,
+    };
+
+    enum SeatPosition {
+        SeatFrontLeft = 0,
+        SeatFrontRight,
+        SeatSecondRowLeft,
+        SeatSecondRowLeftBack,
+        SeatSecondRowCenter,
+        SeatSecondRowRight,
+        SeatSecondRowRightBack,
+        SeatThirdRowLeft,
+        SeatThirdRowRight,
+    };
+
     enum VehicleDataCategory {
         VehicleDataCharge = 0,
         VehicleDataClimate,
@@ -26,6 +45,9 @@ namespace TeslaBLE {
     class CarServer {
         static int BuildActionMessage(
             CarServer_Action *car_server_action, unsigned char *buffer, size_t *buffer_size);
+
+        static int EncodeVehicleAction(const CarServer_VehicleAction &vehicle_action, unsigned char *buffer,
+                                       size_t *buffer_size);
 
         static int ToggleClimate(bool status, unsigned char *buffer, size_t *buffer_size);
 
@@ -54,6 +76,34 @@ namespace TeslaBLE {
 
         static int GetVehicleData(VehicleDataCategory category, unsigned char *buffer,
                                   size_t *buffer_size);
+
+        static int ChangeClimateTemp(float driver_celsius, float passenger_celsius, unsigned char *buffer,
+                                     size_t *buffer_size);
+
+        static int SetSteeringWheelHeater(bool on, unsigned char *buffer, size_t *buffer_size);
+
+        static int SetPreconditioningMax(bool on, bool manual_override, unsigned char *buffer,
+                                         size_t *buffer_size);
+
+        static int SetBioweaponDefenseMode(bool on, bool manual_override, unsigned char *buffer,
+                                           size_t *buffer_size);
+
+        static int SetCabinOverheatProtection(bool on, bool fan_only, unsigned char *buffer,
+                                              size_t *buffer_size);
+
+        static int SetCopTemp(CarServer_ClimateState_CopActivationTemp temp, unsigned char *buffer,
+                              size_t *buffer_size);
+
+        static int SetClimateKeeperMode(CarServer_HvacClimateKeeperAction_ClimateKeeperAction_E mode,
+                                        bool manual_override, unsigned char *buffer, size_t *buffer_size);
+
+        static int SetSeatHeater(SeatPosition seat, ClimateLevel level, unsigned char *buffer,
+                                 size_t *buffer_size);
+
+        static int SetSeatCooler(SeatPosition seat, ClimateLevel level, unsigned char *buffer,
+                                 size_t *buffer_size);
+
+        static int AutoSeatClimate(SeatPosition seat, bool on, unsigned char *buffer, size_t *buffer_size);
     };
 } // TeslaBLE
 

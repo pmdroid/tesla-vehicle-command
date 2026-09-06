@@ -388,3 +388,128 @@ TEST_CASE("BuildKeyWhitelistMessage accepts ROLE_GUEST") {
     REQUIRE(inner.sub_message.WhitelistOperation.sub_message.addKeyToWhitelistAndAddPermissions.keyRole ==
             Keys_Role_ROLE_GUEST);
 }
+
+static CarServer_Action DecodeAction(unsigned char *buffer, size_t size) {
+    CarServer_Action action = CarServer_Action_init_zero;
+    pb_istream_t stream = pb_istream_from_buffer(buffer, size);
+    REQUIRE(pb_decode(&stream, CarServer_Action_fields, &action));
+    return action;
+}
+
+TEST_CASE("ChangeClimateTemp encodes driver and passenger celsius") {
+    unsigned char buffer[64];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::ChangeClimateTemp(21.5f, 22.0f, buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE(action.action_msg.vehicleAction.which_vehicle_action_msg ==
+            CarServer_VehicleAction_hvacTemperatureAdjustmentAction_tag);
+    const auto &temp = action.action_msg.vehicleAction.vehicle_action_msg.hvacTemperatureAdjustmentAction;
+    REQUIRE(temp.driver_temp_celsius == 21.5f);
+    REQUIRE(temp.passenger_temp_celsius == 22.0f);
+    REQUIRE(temp.has_level);
+    REQUIRE(temp.level.which_type == CarServer_HvacTemperatureAdjustmentAction_Temperature_TEMP_MAX_tag);
+}
+
+TEST_CASE("SetSteeringWheelHeater encodes power_on") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::SetSteeringWheelHeater(true, buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE(action.action_msg.vehicleAction.vehicle_action_msg.hvacSteeringWheelHeaterAction.power_on);
+}
+
+TEST_CASE("SetSeatHeater encodes front left high") {
+    unsigned char buffer[64];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::SetSeatHeater(TeslaBLE::SeatFrontLeft, TeslaBLE::ClimateHigh, buffer, &size) ==
+            ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    const auto &heater = action.action_msg.vehicleAction.vehicle_action_msg.hvacSeatHeaterActions;
+    REQUIRE(heater.hvacSeatHeaterAction_count == 1);
+    REQUIRE(heater.hvacSeatHeaterAction[0].which_seat_heater_level ==
+            CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_SEAT_HEATER_HIGH_tag);
+    REQUIRE(heater.hvacSeatHeaterAction[0].which_seat_position ==
+            CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_CAR_SEAT_FRONT_LEFT_tag);
+}
+
+TEST_CASE("SetSeatCooler encodes front right low") {
+    unsigned char buffer[64];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::SetSeatCooler(TeslaBLE::SeatFrontRight, TeslaBLE::ClimateLow, buffer, &size) ==
+            ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    const auto &cooler = action.action_msg.vehicleAction.vehicle_action_msg.hvacSeatCoolerActions;
+    REQUIRE(cooler.hvacSeatCoolerAction_count == 1);
+    REQUIRE(cooler.hvacSeatCoolerAction[0].seat_position ==
+            CarServer_HvacSeatCoolerActions_HvacSeatCoolerPosition_E_HvacSeatCoolerPosition_FrontRight);
+    REQUIRE(cooler.hvacSeatCoolerAction[0].seat_cooler_level ==
+            CarServer_HvacSeatCoolerActions_HvacSeatCoolerLevel_E_HvacSeatCoolerLevel_Low);
+}
+
+TEST_CASE("SetSeatCooler rejects a rear seat") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::SetSeatCooler(TeslaBLE::SeatSecondRowLeft, TeslaBLE::ClimateOff, buffer, &size) ==
+            ResultCode::ERROR);
+}
+
+TEST_CASE("SetClimateKeeperMode encodes dog with override") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::SetClimateKeeperMode(
+                CarServer_HvacClimateKeeperAction_ClimateKeeperAction_E_ClimateKeeperAction_Dog, true, buffer,
+                &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    const auto &keeper = action.action_msg.vehicleAction.vehicle_action_msg.hvacClimateKeeperAction;
+    REQUIRE(keeper.ClimateKeeperAction ==
+            CarServer_HvacClimateKeeperAction_ClimateKeeperAction_E_ClimateKeeperAction_Dog);
+    REQUIRE(keeper.manual_override);
+}
+
+TEST_CASE("SetBioweaponDefenseMode encodes on") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::SetBioweaponDefenseMode(true, false, buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE(action.action_msg.vehicleAction.vehicle_action_msg.hvacBioweaponModeAction.on);
+}
+
+TEST_CASE("SetCabinOverheatProtection encodes fan_only") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::SetCabinOverheatProtection(true, true, buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE(action.action_msg.vehicleAction.vehicle_action_msg.setCabinOverheatProtectionAction.fan_only);
+}
+
+TEST_CASE("SetCopTemp encodes high") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::SetCopTemp(
+                CarServer_ClimateState_CopActivationTemp_CopActivationTempHigh, buffer, &size) ==
+            ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE(action.action_msg.vehicleAction.vehicle_action_msg.setCopTempAction.copActivationTemp ==
+            CarServer_ClimateState_CopActivationTemp_CopActivationTempHigh);
+}
+
+TEST_CASE("SetPreconditioningMax encodes manual_override") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::SetPreconditioningMax(true, true, buffer, &size) == ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    REQUIRE(action.action_msg.vehicleAction.vehicle_action_msg.hvacSetPreconditioningMaxAction.manual_override);
+}
+
+TEST_CASE("AutoSeatClimate encodes front left on") {
+    unsigned char buffer[32];
+    size_t size = 0;
+    REQUIRE(TeslaBLE::CarServer::AutoSeatClimate(TeslaBLE::SeatFrontLeft, true, buffer, &size) ==
+            ResultCode::SUCCESS);
+    auto action = DecodeAction(buffer, size);
+    const auto &seats = action.action_msg.vehicleAction.vehicle_action_msg.autoSeatClimateAction;
+    REQUIRE(seats.carseat_count == 1);
+    REQUIRE(seats.carseat[0].on);
+    REQUIRE(seats.carseat[0].seat_position ==
+            CarServer_AutoSeatClimateAction_AutoSeatPosition_E_AutoSeatPosition_FrontLeft);
+}

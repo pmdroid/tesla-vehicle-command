@@ -26,6 +26,14 @@ namespace TeslaBLE {
         return ResultCode::SUCCESS;
     }
 
+    int CarServer::EncodeVehicleAction(const CarServer_VehicleAction &vehicle_action, unsigned char *buffer,
+                                       size_t *buffer_size) {
+        CarServer_Action car_server_action = CarServer_Action_init_zero;
+        car_server_action.which_action_msg = CarServer_Action_vehicleAction_tag;
+        car_server_action.action_msg.vehicleAction = vehicle_action;
+        return CarServer::BuildActionMessage(&car_server_action, buffer, buffer_size);
+    }
+
     int CarServer::StartCharging(unsigned char *buffer, size_t *buffer_size) {
         CarServer_ChargingStartStopAction start_stop_charging = CarServer_ChargingStartStopAction_init_default;
         start_stop_charging.charging_action.start.dummy_field = 1;
@@ -241,6 +249,173 @@ namespace TeslaBLE {
         car_server_action.which_action_msg = CarServer_Action_vehicleAction_tag;
         car_server_action.action_msg.vehicleAction = vehicle_action;
 
-        return CarServer::BuildActionMessage(&car_server_action, buffer, buffer_size);
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::ChangeClimateTemp(float driver_celsius, float passenger_celsius, unsigned char *buffer,
+                                     size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_hvacTemperatureAdjustmentAction_tag;
+        vehicle_action.vehicle_action_msg.hvacTemperatureAdjustmentAction.driver_temp_celsius = driver_celsius;
+        vehicle_action.vehicle_action_msg.hvacTemperatureAdjustmentAction.passenger_temp_celsius = passenger_celsius;
+        vehicle_action.vehicle_action_msg.hvacTemperatureAdjustmentAction.has_level = true;
+        vehicle_action.vehicle_action_msg.hvacTemperatureAdjustmentAction.level.which_type =
+            CarServer_HvacTemperatureAdjustmentAction_Temperature_TEMP_MAX_tag;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::SetSteeringWheelHeater(bool on, unsigned char *buffer, size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_hvacSteeringWheelHeaterAction_tag;
+        vehicle_action.vehicle_action_msg.hvacSteeringWheelHeaterAction.power_on = on;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::SetPreconditioningMax(bool on, bool manual_override, unsigned char *buffer,
+                                         size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_hvacSetPreconditioningMaxAction_tag;
+        vehicle_action.vehicle_action_msg.hvacSetPreconditioningMaxAction.on = on;
+        vehicle_action.vehicle_action_msg.hvacSetPreconditioningMaxAction.manual_override = manual_override;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::SetBioweaponDefenseMode(bool on, bool manual_override, unsigned char *buffer,
+                                           size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_hvacBioweaponModeAction_tag;
+        vehicle_action.vehicle_action_msg.hvacBioweaponModeAction.on = on;
+        vehicle_action.vehicle_action_msg.hvacBioweaponModeAction.manual_override = manual_override;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::SetCabinOverheatProtection(bool on, bool fan_only, unsigned char *buffer,
+                                              size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_setCabinOverheatProtectionAction_tag;
+        vehicle_action.vehicle_action_msg.setCabinOverheatProtectionAction.on = on;
+        vehicle_action.vehicle_action_msg.setCabinOverheatProtectionAction.fan_only = fan_only;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::SetCopTemp(CarServer_ClimateState_CopActivationTemp temp, unsigned char *buffer,
+                              size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_setCopTempAction_tag;
+        vehicle_action.vehicle_action_msg.setCopTempAction.copActivationTemp = temp;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::SetClimateKeeperMode(CarServer_HvacClimateKeeperAction_ClimateKeeperAction_E mode,
+                                        bool manual_override, unsigned char *buffer, size_t *buffer_size) {
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_hvacClimateKeeperAction_tag;
+        vehicle_action.vehicle_action_msg.hvacClimateKeeperAction.ClimateKeeperAction = mode;
+        vehicle_action.vehicle_action_msg.hvacClimateKeeperAction.manual_override = manual_override;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    static pb_size_t SeatHeaterLevelTag(ClimateLevel level) {
+        switch (level) {
+            case ClimateOff:
+                return CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_SEAT_HEATER_OFF_tag;
+            case ClimateLow:
+                return CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_SEAT_HEATER_LOW_tag;
+            case ClimateMed:
+                return CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_SEAT_HEATER_MED_tag;
+            case ClimateHigh:
+                return CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_SEAT_HEATER_HIGH_tag;
+            default:
+                return 0;
+        }
+    }
+
+    static pb_size_t SeatHeaterPositionTag(SeatPosition seat) {
+        switch (seat) {
+            case SeatFrontLeft:
+                return CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_CAR_SEAT_FRONT_LEFT_tag;
+            case SeatFrontRight:
+                return CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_CAR_SEAT_FRONT_RIGHT_tag;
+            case SeatSecondRowLeft:
+                return CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_CAR_SEAT_REAR_LEFT_tag;
+            case SeatSecondRowLeftBack:
+                return CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_CAR_SEAT_REAR_LEFT_BACK_tag;
+            case SeatSecondRowCenter:
+                return CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_CAR_SEAT_REAR_CENTER_tag;
+            case SeatSecondRowRight:
+                return CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_CAR_SEAT_REAR_RIGHT_tag;
+            case SeatSecondRowRightBack:
+                return CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_CAR_SEAT_REAR_RIGHT_BACK_tag;
+            case SeatThirdRowLeft:
+                return CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_CAR_SEAT_THIRD_ROW_LEFT_tag;
+            case SeatThirdRowRight:
+                return CarServer_HvacSeatHeaterActions_HvacSeatHeaterAction_CAR_SEAT_THIRD_ROW_RIGHT_tag;
+            default:
+                return 0;
+        }
+    }
+
+    int CarServer::SetSeatHeater(SeatPosition seat, ClimateLevel level, unsigned char *buffer,
+                                 size_t *buffer_size) {
+        const pb_size_t level_tag = SeatHeaterLevelTag(level);
+        const pb_size_t seat_tag = SeatHeaterPositionTag(seat);
+        if (level_tag == 0 || seat_tag == 0) {
+            return ResultCode::ERROR;
+        }
+
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_hvacSeatHeaterActions_tag;
+        auto &actions = vehicle_action.vehicle_action_msg.hvacSeatHeaterActions;
+        actions.hvacSeatHeaterAction_count = 1;
+        actions.hvacSeatHeaterAction[0].which_seat_heater_level = level_tag;
+        actions.hvacSeatHeaterAction[0].which_seat_position = seat_tag;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::SetSeatCooler(SeatPosition seat, ClimateLevel level, unsigned char *buffer,
+                                 size_t *buffer_size) {
+        CarServer_HvacSeatCoolerActions_HvacSeatCoolerPosition_E proto_seat;
+        switch (seat) {
+            case SeatFrontLeft:
+                proto_seat = CarServer_HvacSeatCoolerActions_HvacSeatCoolerPosition_E_HvacSeatCoolerPosition_FrontLeft;
+                break;
+            case SeatFrontRight:
+                proto_seat =
+                    CarServer_HvacSeatCoolerActions_HvacSeatCoolerPosition_E_HvacSeatCoolerPosition_FrontRight;
+                break;
+            default:
+                return ResultCode::ERROR;
+        }
+
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_hvacSeatCoolerActions_tag;
+        auto &actions = vehicle_action.vehicle_action_msg.hvacSeatCoolerActions;
+        actions.hvacSeatCoolerAction_count = 1;
+        actions.hvacSeatCoolerAction[0].seat_position = proto_seat;
+        actions.hvacSeatCoolerAction[0].seat_cooler_level =
+            static_cast<CarServer_HvacSeatCoolerActions_HvacSeatCoolerLevel_E>(level + 1);
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
+    }
+
+    int CarServer::AutoSeatClimate(SeatPosition seat, bool on, unsigned char *buffer, size_t *buffer_size) {
+        CarServer_AutoSeatClimateAction_AutoSeatPosition_E proto_seat;
+        switch (seat) {
+            case SeatFrontLeft:
+                proto_seat = CarServer_AutoSeatClimateAction_AutoSeatPosition_E_AutoSeatPosition_FrontLeft;
+                break;
+            case SeatFrontRight:
+                proto_seat = CarServer_AutoSeatClimateAction_AutoSeatPosition_E_AutoSeatPosition_FrontRight;
+                break;
+            default:
+                return ResultCode::ERROR;
+        }
+
+        CarServer_VehicleAction vehicle_action = CarServer_VehicleAction_init_zero;
+        vehicle_action.which_vehicle_action_msg = CarServer_VehicleAction_autoSeatClimateAction_tag;
+        auto &action = vehicle_action.vehicle_action_msg.autoSeatClimateAction;
+        action.carseat_count = 1;
+        action.carseat[0].on = on;
+        action.carseat[0].seat_position = proto_seat;
+        return CarServer::EncodeVehicleAction(vehicle_action, buffer, buffer_size);
     }
 } // TeslaBLE
