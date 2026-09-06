@@ -56,6 +56,15 @@ namespace TeslaBLE {
         return ResultCode::SUCCESS;
     }
 
+    void Authenticator::ClearSharedSecret(UniversalMessage_Domain domain) {
+        auto it = this->shared_secrets_.find(domain);
+        if (it == this->shared_secrets_.end()) {
+            return;
+        }
+        mbedtls_platform_zeroize(it->second, 16);
+        this->shared_secrets_.erase(it);
+    }
+
     int Authenticator::BuildKeyWhitelistMessage(Keys_Role role, unsigned char *output_buffer,
                                                 size_t *output_size) {
         if (!this->private_key_loaded_) {

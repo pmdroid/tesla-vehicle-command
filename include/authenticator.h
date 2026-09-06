@@ -71,6 +71,8 @@ namespace TeslaBLE {
 
     int GetSharedSecret(UniversalMessage_Domain domain, unsigned char *output_buffer, size_t output_size);
 
+    void ClearSharedSecret(UniversalMessage_Domain domain);
+
     int VerifySessionInfoTag(UniversalMessage_Domain domain, unsigned char *vin,
                              unsigned char *challenge, size_t challenge_size,
                              unsigned char *session_info, size_t session_info_size,

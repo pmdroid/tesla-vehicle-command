@@ -127,6 +127,7 @@ namespace TeslaBLE {
 
         auto uuid_size = this->request_uuid_sizes_.find(domain);
         if (uuid_size == this->request_uuid_sizes_.end() || uuid_size->second == 0) {
+            this->authenticator_->ClearSharedSecret(domain);
             this->has_valid_session_info_[domain] = false;
             return ResultCode::SESSION_INFO_HMAC_INVALID;
         }
@@ -134,6 +135,7 @@ namespace TeslaBLE {
             domain, this->vin_, this->request_uuids_[domain], uuid_size->second,
             session_info_message, session_info_length, tag, tag_length);
         if (result != ResultCode::SUCCESS) {
+            this->authenticator_->ClearSharedSecret(domain);
             this->has_valid_session_info_[domain] = false;
             return result;
         }

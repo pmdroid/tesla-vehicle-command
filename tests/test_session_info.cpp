@@ -134,5 +134,9 @@ TEST_CASE("UpdateSessionInfo rejects a bad session info HMAC") {
     REQUIRE(session.UpdateSessionInfo(
                 UniversalMessage_Domain_DOMAIN_INFOTAINMENT, encoded.data(), encoded.size(),
                 tag.data(), tag.size()) == ResultCode::SESSION_INFO_HMAC_INVALID);
+    unsigned char shared[16];
+    REQUIRE(authenticator.GetSharedSecret(
+                UniversalMessage_Domain_DOMAIN_INFOTAINMENT, shared, sizeof(shared)) ==
+            ResultCode::SESSION_INFO_NOT_LOADED);
     authenticator.Cleanup();
 }
