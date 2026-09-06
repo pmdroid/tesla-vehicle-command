@@ -8,6 +8,7 @@
 #include <cstdint>
 #include <cstddef>
 
+#include <car_server.pb.h>
 #include <universal_message.pb.h>
 #include <vcsec.pb.h>
 
@@ -54,6 +55,9 @@ namespace TeslaBLE {
 
         static int DecodeFromVCSECMessage(unsigned char *buffer, size_t buffer_size,
                                           VCSEC_FromVCSECMessage *output_message);
+
+        static int DecodeCarServerResponse(unsigned char *buffer, size_t buffer_size,
+                                           CarServer_Response *output_message);
 
         static int EncodeRoutableMessage(UniversalMessage_RoutableMessage routable_message,
                                          unsigned char *output_buffer,
