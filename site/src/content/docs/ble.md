@@ -23,7 +23,7 @@ Every Tesla BLE payload starts with a 2-byte big-endian length, then that many p
 
 ## ATT fragments
 
-Indications can split a message across packets. Push each chunk into `BleFrame::Add`. `COMPLETE` means `Payload()` / `PayloadSize()` is the full RoutableMessage (length prefix included). `ERROR` means reset. `NEED_MORE` means wait.
+Indications can split a message across packets. The first chunk must include the 2-byte length prefix. `BleFrame::Add` strips that prefix. `COMPLETE` means `Payload()` / `PayloadSize()` is the RoutableMessage protobuf only. `ERROR` means reset. `NEED_MORE` means wait.
 
 ```cpp
 TeslaBLE::BleFrame frame;

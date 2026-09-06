@@ -42,7 +42,7 @@ authenticator.BuildKeyWhitelistMessage(
     &size);
 ```
 
-`ROLE_GUEST` is valid. Form factor is an argument. Send `buffer` over the VCSEC BLE characteristic (see [BLE framing](/ble/)).
+`ROLE_GUEST` is valid. Form factor is an argument. Send `buffer` over the VCSEC BLE characteristic (see [BLE framing](../ble/)).
 
 The car replies with an operation status:
 
