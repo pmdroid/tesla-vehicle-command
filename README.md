@@ -1,6 +1,6 @@
 ## Tesla Vehicle Command (CPP/Arduino) / TeslaBLE
 
-Usage docs (pairing, session, commands, BLE): [site/](site/) after `cd site && npm ci && npm run dev`. GitHub Pages serves the same tree from `main`.
+Usage docs: [https://pmdroid.github.io/tesla-vehicle-command/](https://pmdroid.github.io/tesla-vehicle-command/)
 
 This library is the successor of the [TeslaBLE](https://github.com/pmdroid/tesla-ble) library. Tesla vehicles now
 support a new protocol that ensures secure,
