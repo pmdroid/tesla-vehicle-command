@@ -1,5 +1,7 @@
 ## Tesla Vehicle Command (CPP/Arduino) / TeslaBLE
 
+Usage docs: [https://pmdroid.github.io/tesla-vehicle-command/](https://pmdroid.github.io/tesla-vehicle-command/)
+
 This library is the successor of the [TeslaBLE](https://github.com/pmdroid/tesla-ble) library. Tesla vehicles now
 support a new protocol that ensures secure,
 end-to-end command authentication.
@@ -121,8 +123,6 @@ Decode infotainment replies with `Common::DecodeCarServerResponse`. Decode VCSEC
 `Authenticator::BuildKeyWhitelistMessage` takes `Keys_Role` (including `ROLE_GUEST`) and `VCSEC_KeyFormFactor`.
 
 `CarServer`: climate on/off, temp, seats, COP, bioweapon, climate keeper, charge start/stop/limit/amps/max/standard, charge port, schedules, nearby sites, honk, flash, windows, sunroof, sentry, valet, guest, ping, software update, homelink, vehicle name, media, volume, GetVehicleData (12 Tesla BLE categories), parental controls, PIN admin reset, low-power, keep accessory power.
-
-Not implemented on BLE: `SetPINToDrive` (Tesla requires Fleet API), HMAC-personalized (HTTPS), tesla-http-proxy.
 
 Protos are pinned to teslamotors/vehicle-command `f97fa1e` (`protobuf/TESLA_COMMIT`).
 

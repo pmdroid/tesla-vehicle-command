@@ -1,7 +1,7 @@
 {
   "name": "tesla-vehicle-command-cpp",
   "version": "1.0.0",
-  "description": "This CPP library facilitates direct communication with Tesla vehicles via the BLE API. It offers fundamental features such as unlocking/locking, opening the trunk, and more. The library's capabilities are contingent on the range of actions implemented by Tesla, which is the only limitation at present.",
+  "description": "C++ library for Tesla vehicle-command over BLE: lock, unlock, climate, charge, and the CarServer/Security helpers.",
   "keywords": "tesla, ble, vehicle control",
   "repository": {
     "type": "git",
@@ -38,6 +38,8 @@
       "**/.vscode/",
       ".stfolder/",
       "**/.stfolder/",
+      "site/",
+      "**/site/",
       "library.zip",
       "**/library.zip"
     ]
