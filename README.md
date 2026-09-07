@@ -124,8 +124,6 @@ Decode infotainment replies with `Common::DecodeCarServerResponse`. Decode VCSEC
 
 `CarServer`: climate on/off, temp, seats, COP, bioweapon, climate keeper, charge start/stop/limit/amps/max/standard, charge port, schedules, nearby sites, honk, flash, windows, sunroof, sentry, valet, guest, ping, software update, homelink, vehicle name, media, volume, GetVehicleData (12 Tesla BLE categories), parental controls, PIN admin reset, low-power, keep accessory power.
 
-Not implemented on BLE: `SetPINToDrive` (Tesla requires Fleet API), HMAC-personalized (HTTPS), tesla-http-proxy.
-
 Protos are pinned to teslamotors/vehicle-command `f97fa1e` (`protobuf/TESLA_COMMIT`).
 
 ## Protocol Details
